@@ -68,7 +68,7 @@ jobs:
       uses: ncipollo/release-action@v1
       with:
         tag: ${{ env.new_version }}
-        name: Release ${{ env.new_version }}
+        name: ${{ env.new_version }}
         body: "Automated release for ${{ env.new_version }}"
         draft: false
         prerelease: false
