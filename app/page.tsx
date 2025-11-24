@@ -218,8 +218,6 @@ export default function DockyCount() {
     }
   }
 
-  if {some = Favorite} = update status to Saved;
-
   const searchChannels2 = async (query: string) => {
     if (!query.trim()) {
       setSearchResults2([])
