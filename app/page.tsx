@@ -397,20 +397,26 @@ export default function DockyCount() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/30">
+    <div className="min-h-screen bg-background text-white relative overflow-x-hidden">
       <Toaster />
 
       {/* Limit Overlay */}
       {showLimitOverlay && (
-        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-          <Card className="max-w-md w-full bg-card border-destructive/50 shadow-2xl shadow-destructive/20">
+        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-md">
+          <Card className="max-w-md w-full glass-strong border-red-500/50 shadow-2xl shadow-red-500/20 animate-in fade-in zoom-in duration-300">
             <CardHeader>
-              <CardTitle className="text-destructive text-2xl">Usage limit reached</CardTitle>
+              <CardTitle className="text-red-400 text-2xl font-bold flex items-center gap-2">
+                <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
+                Usage Limit Reached
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-muted-foreground">You have reached the daily usage limit of 1 hour.</p>
-              <p className="text-muted-foreground text-sm">Come back tomorrow to continue using DockyCount!</p>
-              <Button onClick={() => window.location.reload()} className="w-full" variant="destructive">
+              <p className="text-gray-300">You have reached the daily usage limit of 1 hour.</p>
+              <p className="text-gray-400 text-sm">Come back tomorrow to continue using DockyCount!</p>
+              <Button
+                onClick={() => window.location.reload()}
+                className="w-full bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-semibold btn-glow"
+              >
                 Close
               </Button>
             </CardContent>
@@ -418,64 +424,75 @@ export default function DockyCount() {
         </div>
       )}
 
-      <header className="sticky top-0 z-40 border-b border-white/5 bg-background/80 backdrop-blur-xl">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary to-purple-600 rounded-xl flex items-center justify-center font-bold text-xl shadow-lg shadow-primary/20 text-white">
-              DC
-            </div>
-            <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
-              DockyCount
-            </h1>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="hidden md:block text-sm text-muted-foreground bg-secondary/50 px-3 py-1 rounded-full border border-white/5">
-              Time: <span className="text-foreground font-medium">{formatTime(usageTime)}</span> / 1h
-            </div>
-
-            {user ? (
-              <div className="flex items-center gap-3 pl-4 border-l border-white/10">
-                <img
-                  src={user.photoURL || ""}
-                  alt={user.displayName || ""}
-                  className="w-8 h-8 rounded-full ring-2 ring-primary/20"
-                />
-                <span className="text-sm font-medium hidden md:block">{user.displayName}</span>
-                <Button
-                  onClick={handleSignOut}
-                  variant="ghost"
-                  size="icon"
-                  className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                >
-                  <LogOut className="w-4 h-4" />
-                </Button>
+      {/* Modern Header with Gradient */}
+      <header className="sticky top-0 z-40 border-b border-purple-500/20 glass-strong shadow-lg shadow-purple-500/5">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            {/* Logo */}
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 via-pink-500 to-blue-500 rounded-xl flex items-center justify-center font-bold text-xl shadow-lg shadow-purple-500/30 animate-in zoom-in duration-500">
+                DC
               </div>
-            ) : (
-              <Button onClick={handleSignIn} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20">
-                Sign In
-              </Button>
-            )}
+              <div>
+                <h1 className="text-2xl font-bold gradient-text">DockyCount</h1>
+                <p className="text-xs text-gray-400">Real-Time YouTube Stats</p>
+              </div>
+            </div>
+
+            {/* User Actions */}
+            <div className="flex items-center gap-4">
+              <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg glass">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <span className="text-sm text-gray-300">Time: {formatTime(usageTime)} / 1h</span>
+              </div>
+
+              {user ? (
+                <div className="flex items-center gap-3">
+                  <img
+                    src={user.photoURL || ""}
+                    alt={user.displayName || ""}
+                    className="w-9 h-9 rounded-full border-2 border-purple-500/50 shadow-lg"
+                  />
+                  <span className="text-sm text-white hidden md:block font-medium">{user.displayName}</span>
+                  <Button
+                    onClick={handleSignOut}
+                    className="bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white btn-glow"
+                    size="sm"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  onClick={handleSignIn}
+                  className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold btn-glow"
+                >
+                  Sign In with Google
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </header>
 
       <div className="container mx-auto px-4 py-8">
         <div className="grid lg:grid-cols-12 gap-8">
-          {/* Sidebar */}
-          <aside className="lg:col-span-3 space-y-6">
-            <Card className="bg-card/50 backdrop-blur-md border-white/5 shadow-xl">
+          {/* Modern Sidebar */}
+          <aside className="lg:col-span-3 space-y-4">
+            {/* Favorites Card */}
+            <Card className="glass-strong border-purple-500/30 shadow-xl shadow-purple-500/10 card-hover">
               <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                <CardTitle className="text-lg gradient-text-pink flex items-center gap-2">
+                  <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
                   Favorites
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 {favorites.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground text-sm">
-                    <p>No favorites yet</p>
-                    <p className="text-xs mt-1 opacity-50">Search and star channels to add them here</p>
+                  <div className="text-center py-8">
+                    <Star className="w-12 h-12 text-gray-600 mx-auto mb-3 opacity-50" />
+                    <p className="text-sm text-gray-400">No favorites yet</p>
+                    <p className="text-xs text-gray-500 mt-1">Sign in to save channels</p>
                   </div>
                 ) : (
                   favorites.map((fav) => (
@@ -488,48 +505,56 @@ export default function DockyCount() {
                           fetchChannelStats(fav.id, false)
                         }, 2000)
                       }}
-                      className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-all group text-left"
+                      className="w-full flex items-center gap-3 p-2.5 rounded-lg glass hover:glass-strong transition-all duration-300 text-left group hover:scale-105"
                     >
-                      <img src={fav.avatar || "/placeholder.svg"} alt={fav.name} className="w-8 h-8 rounded-full ring-1 ring-white/10 group-hover:ring-primary/50 transition-all" />
-                      <span className="text-sm font-medium truncate group-hover:text-primary transition-colors">{fav.name}</span>
+                      <img
+                        src={fav.avatar || "/placeholder.svg"}
+                        alt={fav.name}
+                        className="w-10 h-10 rounded-full border-2 border-purple-500/30 group-hover:border-purple-500/60 transition-all"
+                      />
+                      <span className="text-sm text-white truncate font-medium">{fav.name}</span>
                     </button>
                   ))
                 )}
               </CardContent>
             </Card>
 
-            <AdPlaceholder className="h-[250px] hidden lg:flex" />
+            {/* AdSense Placeholder - Sidebar */}
+            <AdPlaceholder className="min-h-[250px]" />
           </aside>
 
           {/* Main Content */}
           <main className="lg:col-span-9 space-y-8">
-            <Card className="bg-card/50 backdrop-blur-md border-white/5 shadow-xl overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-purple-500/5 pointer-events-none" />
-              <CardContent className="pt-6 relative">
-                <div className="flex gap-2 mb-6 p-1 bg-black/20 rounded-xl w-fit">
-                  <button
+            {/* Search Card */}
+            <Card className="glass-strong border-purple-500/30 shadow-xl shadow-purple-500/10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <CardContent className="pt-6">
+                {/* Mode Toggle */}
+                <div className="flex gap-3 mb-6">
+                  <Button
                     onClick={() => setCompareMode(false)}
-                    className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${!compareMode
-                      ? "bg-primary text-white shadow-lg"
-                      : "text-muted-foreground hover:text-white hover:bg-white/5"
+                    className={`flex-1 font-semibold transition-all duration-300 ${!compareMode
+                      ? "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg shadow-blue-500/30 btn-glow"
+                      : "bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 border border-gray-700"
                       }`}
                   >
+                    <Video className="w-4 h-4 mr-2" />
                     Simple Mode
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={() => setCompareMode(true)}
-                    className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${compareMode
-                      ? "bg-purple-600 text-white shadow-lg"
-                      : "text-muted-foreground hover:text-white hover:bg-white/5"
+                    className={`flex-1 font-semibold transition-all duration-300 ${compareMode
+                      ? "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg shadow-purple-500/30 btn-glow"
+                      : "bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 border border-gray-700"
                       }`}
                   >
+                    <TrendingUp className="w-4 h-4 mr-2" />
                     Compare Mode
-                  </button>
+                  </Button>
                 </div>
 
                 {!compareMode ? (
                   <div className="relative group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-blue-400 transition-colors" />
                     <Input
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
@@ -605,39 +630,48 @@ export default function DockyCount() {
 
             <AdPlaceholder className="h-[120px]" />
 
-            {/* Channel Stats */}
+            {/* Channel Stats - Premium Design */}
             <div className={`grid ${compareMode && compareChannel ? "md:grid-cols-2" : "grid-cols-1"} gap-6`}>
-              {/* Main Channel */}
+              {/* Main Channel Card */}
               {selectedChannel && (
-                <Card className="bg-card/50 backdrop-blur-md border-white/5 shadow-xl overflow-hidden relative group">
-                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-purple-600" />
+                <Card className="glass-strong border-purple-500/30 shadow-2xl shadow-purple-500/20 overflow-hidden relative group card-hover animate-in fade-in slide-in-from-left-4 duration-500">
+                  {/* Top gradient accent */}
+                  <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 animate-pulse" />
+
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
                         <div className="relative">
+                          <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full blur-md opacity-50 group-hover:opacity-75 transition-opacity"></div>
                           <img
                             src={selectedChannel.avatar || "/placeholder.svg"}
                             alt={selectedChannel.name}
-                            className="w-16 h-16 rounded-full ring-4 ring-black/50 shadow-xl"
+                            className="relative w-16 h-16 rounded-full border-4 border-purple-500/30 shadow-xl"
                           />
-                          <div className="absolute -bottom-1 -right-1 bg-red-600 text-[10px] font-bold px-1.5 py-0.5 rounded text-white">LIVE</div>
+                          {/* Live Badge */}
+                          <div className="absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-lg shadow-red-500/50 animate-pulse">
+                            LIVE
+                          </div>
                         </div>
                         <div>
-                          <CardTitle className="text-2xl font-bold">{selectedChannel.name}</CardTitle>
-                          <div className="text-sm text-muted-foreground">YouTube Channel</div>
+                          <CardTitle className="text-xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                            {selectedChannel.name}
+                          </CardTitle>
+                          <p className="text-xs text-gray-400 mt-1">Updating every 2 seconds</p>
                         </div>
                       </div>
+                      {/* Action Buttons */}
                       <div className="flex gap-2">
                         <Button
                           onClick={() => toggleFavorite(selectedChannel)}
                           variant="ghost"
                           size="icon"
-                          className="hover:bg-white/10"
+                          className="hover:bg-purple-500/20 transition-all duration-300 hover:scale-110"
                         >
                           <Star
-                            className={`w-6 h-6 transition-all ${favorites.some((f) => f.id === selectedChannel.id)
-                              ? "fill-yellow-400 text-yellow-400 scale-110"
-                              : "text-muted-foreground"
+                            className={`w-5 h-5 transition-all duration-300 ${favorites.some((f) => f.id === selectedChannel.id)
+                                ? "fill-yellow-400 text-yellow-400 drop-shadow-lg drop-shadow-yellow-400/50"
+                                : "text-gray-400 hover:text-yellow-400"
                               }`}
                           />
                         </Button>
@@ -648,54 +682,65 @@ export default function DockyCount() {
                           }}
                           variant="ghost"
                           size="icon"
-                          className="hover:bg-white/10 hover:text-destructive"
+                          className="hover:bg-red-500/20 transition-all duration-300 hover:scale-110"
                         >
-                          <X className="w-6 h-6" />
+                          <X className="w-5 h-5 text-gray-400 hover:text-red-400" />
                         </Button>
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="bg-black/20 rounded-2xl p-6 border border-white/5 text-center relative overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-50" />
+
+                  <CardContent className="space-y-4">
+                    {/* Subscribers - Main Stat */}
+                    <div className="relative glass-strong rounded-xl p-5 stat-glow-red overflow-hidden transition-all duration-300">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-red-500/20 to-transparent rounded-full blur-2xl"></div>
                       <div className="relative z-10">
-                        <div className="flex items-center justify-center gap-2 text-sm font-medium text-primary mb-2 uppercase tracking-wider">
-                          <Users className="w-4 h-4" />
-                          <span>Subscribers</span>
+                        <div className="flex items-center gap-2 text-sm text-gray-300 mb-3">
+                          <Users className="w-5 h-5 text-red-400" />
+                          <span className="font-semibold">Subscribers</span>
                         </div>
                         <div
                           id="main-subscribers"
-                          className="text-6xl md:text-7xl font-[family-name:var(--font-roboto-black)] text-white tracking-tight"
+                          className="text-5xl font-[family-name:var(--font-roboto-black)] text-red-400 drop-shadow-lg drop-shadow-red-500/50"
                         >
                           0
                         </div>
                       </div>
                     </div>
 
+                    {/* Views & Videos Grid */}
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-black/20 rounded-xl p-4 border border-white/5">
-                        <div className="flex items-center gap-2 text-xs font-medium text-blue-400 mb-2 uppercase">
-                          <Eye className="w-3 h-3" />
-                          <span>Total Views</span>
-                        </div>
-                        <div
-                          id="main-views"
-                          className="text-xl md:text-2xl font-[family-name:var(--font-roboto-black)] text-white/90"
-                        >
-                          0
+                      {/* Views */}
+                      <div className="relative glass-strong rounded-xl p-4 stat-glow-blue overflow-hidden transition-all duration-300">
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-500/20 to-transparent rounded-full blur-2xl"></div>
+                        <div className="relative z-10">
+                          <div className="flex items-center gap-2 text-sm text-gray-300 mb-2">
+                            <Eye className="w-4 h-4 text-blue-400" />
+                            <span className="font-medium">Views</span>
+                          </div>
+                          <div
+                            id="main-views"
+                            className="text-2xl font-[family-name:var(--font-roboto-black)] text-blue-400 drop-shadow-md drop-shadow-blue-500/50"
+                          >
+                            0
+                          </div>
                         </div>
                       </div>
 
-                      <div className="bg-black/20 rounded-xl p-4 border border-white/5">
-                        <div className="flex items-center gap-2 text-xs font-medium text-green-400 mb-2 uppercase">
-                          <Video className="w-3 h-3" />
-                          <span>Videos</span>
-                        </div>
-                        <div
-                          id="main-videos"
-                          className="text-xl md:text-2xl font-[family-name:var(--font-roboto-black)] text-white/90"
-                        >
-                          0
+                      {/* Videos */}
+                      <div className="relative glass-strong rounded-xl p-4 stat-glow-green overflow-hidden transition-all duration-300">
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-green-500/20 to-transparent rounded-full blur-2xl"></div>
+                        <div className="relative z-10">
+                          <div className="flex items-center gap-2 text-sm text-gray-300 mb-2">
+                            <Video className="w-4 h-4 text-green-400" />
+                            <span className="font-medium">Videos</span>
+                          </div>
+                          <div
+                            id="main-videos"
+                            className="text-2xl font-[family-name:var(--font-roboto-black)] text-green-400 drop-shadow-md drop-shadow-green-500/50"
+                          >
+                            0
+                          </div>
                         </div>
                       </div>
                     </div>
