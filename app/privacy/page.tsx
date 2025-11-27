@@ -59,7 +59,7 @@ export default function PrivacyPolicy() {
                     <section>
                         <h2 className="text-xl font-semibold text-white mb-2">6. Contact Us</h2>
                         <p>
-                            If you have any questions about this privacy policy or our privacy practices, please contact us at: contact@dockycount.com
+                            If you have any questions about this privacy policy or our privacy practices, please contact us at: dockyhost@gmail.com
                         </p>
                     </section>
                 </CardContent>
