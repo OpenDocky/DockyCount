@@ -47,6 +47,9 @@ export const metadata: Metadata = {
     maximumScale: 5,
   },
   generator: "v0.app",
+  other: {
+    "google-adsense-account": "ca-pub-3145023750951462",
+  },
 }
 
 export default function RootLayout({
