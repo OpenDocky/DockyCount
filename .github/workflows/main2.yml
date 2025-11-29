@@ -16,13 +16,13 @@ jobs:
       - name: Decide if run
         id: decide
         run: |
-          # 15% de chance d'exécuter
+          # 60% de chance d'exécuter
           if [ $(( RANDOM % 100 )) -lt 60 ]; then
             echo "run=true" >> $GITHUB_OUTPUT
-            echo "✅ Run (15% chance)"
+            echo "✅ Run"
           else
             echo "run=false" >> $GITHUB_OUTPUT
-            echo "❌ Skip (85% chance)"
+            echo "❌ Skip"
           fi
 
       - name: Checkout beta branch
@@ -35,8 +35,8 @@ jobs:
       - name: Fetch subscriber count
         if: steps.decide.outputs.run == 'true'
         run: |
-          curl -s https://backend.mixerno.space/api/youtube/estv3/UCX6OQ3DkcsbYNE6H8uQQuVA \
-          | jq '{subscriberCount: .items[0].statistics.subscriberCount}' > mrbeast.json
+          curl -s https://ests.sctools.org/api/get/UCX6OQ3DkcsbYNE6H8uQQuVA \
+          | jq '{estCount: .stats.estCount}' > mrbeast.json
 
       - name: Commit and push to beta
         if: steps.decide.outputs.run == 'true'
@@ -44,7 +44,7 @@ jobs:
           git config user.name "GraphStats"
           git config user.email "189259481+GraphStats@users.noreply.github.com"
           git add mrbeast.json
-          git commit -m "Update subscriber count [skip ci]" || echo "No changes to commit"
+          git commit -m "Update estCount [skip ci]" || echo "No changes to commit"
           git push origin beta
         env:
           GITHUB_TOKEN: ${{ secrets.MY_PERSONAL_TOKEN }}
