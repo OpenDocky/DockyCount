@@ -23,17 +23,6 @@ export function AdPlaceholder({
         if (adLoadedRef.current || !adContainerRef.current) return
         adLoadedRef.current = true
 
-        // Create a unique container for this ad instance
-        const adWrapper = document.createElement("div")
-        adWrapper.id = `ad-wrapper-${uniqueId.replace(/:/g, '-')}`
-        adWrapper.style.cssText = `
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            overflow: hidden;
-        `
-
         // Set atOptions on window with unique key for this instance
         const optionsScript = document.createElement("script")
         optionsScript.type = "text/javascript"
@@ -46,32 +35,50 @@ export function AdPlaceholder({
                 'params': {}
             };
         `
-        adWrapper.appendChild(optionsScript)
+        adContainerRef.current.appendChild(optionsScript)
 
         // Create and append the ad script
         const invokeScript = document.createElement("script")
         invokeScript.type = "text/javascript"
         invokeScript.src = `https://autographmarquisbuffet.com/${adKey}/invoke.js`
         invokeScript.async = true
-        adWrapper.appendChild(invokeScript)
-
-        adContainerRef.current.appendChild(adWrapper)
+        adContainerRef.current.appendChild(invokeScript)
     }, [adKey, width, height, uniqueId])
 
     return (
         <div
-            ref={adContainerRef}
-            className={`relative bg-gradient-to-br from-purple-900/10 via-blue-900/10 to-pink-900/10 border border-purple-500/20 rounded-xl backdrop-blur-sm overflow-hidden transition-all duration-300 hover:border-purple-500/40 ${className}`}
+            className={`relative rounded-xl ${className}`}
             style={{
-                minHeight: height + 20,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
+                width: '100%',
+                maxWidth: width,
+                height: height + 20,
+                margin: '0 auto',
+                overflow: 'hidden',
             }}
         >
-            {/* Corner accent */}
-            <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-purple-500/10 to-transparent rounded-bl-3xl pointer-events-none z-10"></div>
-            <div className="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-blue-500/10 to-transparent rounded-tr-3xl pointer-events-none z-10"></div>
+            {/* Ad container with strict clipping */}
+            <div
+                ref={adContainerRef}
+                style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    width: width,
+                    height: height,
+                    overflow: 'hidden',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    clipPath: `inset(0 0 0 0)`,
+                }}
+            />
+
+            {/* Decorative background */}
+            <div
+                className="absolute inset-0 bg-gradient-to-br from-purple-900/10 via-blue-900/10 to-pink-900/10 border border-purple-500/20 rounded-xl pointer-events-none"
+                style={{ zIndex: -1 }}
+            />
         </div>
     )
 }
