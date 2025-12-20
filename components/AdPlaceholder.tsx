@@ -15,70 +15,63 @@ export function AdPlaceholder({
     width = 728,
     height = 90
 }: AdPlaceholderProps) {
-    const adContainerRef = useRef<HTMLDivElement>(null)
-    const adLoadedRef = useRef(false)
+    const containerStyle: React.CSSProperties = {
+        position: 'relative',
+        width: '100%',
+        maxWidth: width + 40,
+        minHeight: height + 20,
+        margin: '0 auto',
+        overflow: 'hidden',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, rgba(147, 51, 234, 0.1), rgba(59, 130, 246, 0.1), rgba(236, 72, 153, 0.1))',
+        border: '1px solid rgba(147, 51, 234, 0.3)',
+        borderRadius: '12px',
+        backdropFilter: 'blur(8px)',
+        padding: '10px',
+    }
 
-    useEffect(() => {
-        if (adLoadedRef.current || !adContainerRef.current) return
-        adLoadedRef.current = true
-
-        // Create unique ID for this ad instance
-        const uniqueId = `ad-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
-
-        // Set atOptions on window
-        const optionsScript = document.createElement("script")
-        optionsScript.type = "text/javascript"
-        optionsScript.id = `options-${uniqueId}`
-        optionsScript.textContent = `
-            atOptions = {
-                'key': '${adKey}',
-                'format': 'iframe',
-                'height': ${height},
-                'width': ${width},
-                'params': {}
-            };
-        `
-        adContainerRef.current.appendChild(optionsScript)
-
-        // Create and append the ad script
-        const invokeScript = document.createElement("script")
-        invokeScript.type = "text/javascript"
-        invokeScript.id = `invoke-${uniqueId}`
-        invokeScript.src = `https://autographmarquisbuffet.com/${adKey}/invoke.js`
-        adContainerRef.current.appendChild(invokeScript)
-    }, [adKey, width, height])
+    const adHtml = `
+        <!DOCTYPE html>
+        <html>
+            <head>
+                <style>
+                    body { margin: 0; padding: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; width: 100vw; height: 100vh; background: transparent; }
+                </style>
+            </head>
+            <body>
+                <script type="text/javascript">
+                    atOptions = {
+                        'key' : '${adKey}',
+                        'format' : 'iframe',
+                        'height' : ${height},
+                        'width' : ${width},
+                        'params' : {}
+                    };
+                </script>
+                <script type="text/javascript" src="https://autographmarquisbuffet.com/${adKey}/invoke.js"></script>
+            </body>
+        </html>
+    `
 
     return (
-        <div
-            className={className}
-            style={{
-                position: 'relative',
-                width: '100%',
-                maxWidth: width + 40,
-                minHeight: height + 20,
-                margin: '0 auto',
-                overflow: 'hidden',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'linear-gradient(135deg, rgba(147, 51, 234, 0.1), rgba(59, 130, 246, 0.1), rgba(236, 72, 153, 0.1))',
-                border: '1px solid rgba(147, 51, 234, 0.3)',
-                borderRadius: '12px',
-                backdropFilter: 'blur(8px)',
-                padding: '10px',
-            }}
-        >
-            {/* Ad container */}
-            <div
-                ref={adContainerRef}
+        <div className={className} style={containerStyle}>
+            {/* Ad container using iframe isolation */}
+            <iframe
+                title={`ad-${adKey}`}
+                srcDoc={adHtml}
+                width={width}
+                height={height}
+                scrolling="no"
+                frameBorder="0"
+                allowTransparency={true}
                 style={{
-                    width: width,
+                    border: 'none',
                     maxWidth: '100%',
-                    height: height,
                     overflow: 'hidden',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    display: 'block',
+                    background: 'transparent'
                 }}
             />
 
