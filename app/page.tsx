@@ -11,6 +11,7 @@ import { Search, Star, LogOut, TrendingUp, TrendingDown, Users, Eye, Video, X, S
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
 import { AdPlaceholder } from "@/components/AdPlaceholder"
+import Script from "next/script"
 
 // Firebase Configuration
 const firebaseConfig = {
@@ -1006,6 +1007,16 @@ export default function DockyCount() {
                   </p>
                 </section>
               </div>
+            </div>
+
+            <div className="mt-8">
+              <div id="container-7af5a7128095f6499b5e5fead25034bd" className="flex justify-center"></div>
+              <Script
+                src="https://autographmarquisbuffet.com/7af5a7128095f6499b5e5fead25034bd/invoke.js"
+                strategy="afterInteractive"
+                data-cfasync="false"
+                async={true}
+              />
             </div>
 
             <AdPlaceholder className="w-full" width={728} height={90} />
