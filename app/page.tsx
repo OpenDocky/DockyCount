@@ -924,7 +924,7 @@ export default function DockyCount() {
               </div>
             </div>
 
-            <AdPlaceholder className="h-[100px]" />
+            <AdPlaceholder className="w-full" width={728} height={90} />
           </main>
         </div>
       </div>
