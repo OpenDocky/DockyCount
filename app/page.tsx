@@ -519,8 +519,8 @@ export default function DockyCount() {
               </CardContent>
             </Card>
 
-            {/* AdSense Placeholder - Sidebar */}
-            <AdPlaceholder className="min-h-[250px]" />
+            {/* AdSense Placeholder - Sidebar (300x250 Medium Rectangle) */}
+            <AdPlaceholder className="w-full" width={300} height={250} />
           </aside>
 
           {/* Main Content */}
@@ -628,7 +628,7 @@ export default function DockyCount() {
               </CardContent>
             </Card>
 
-            <AdPlaceholder className="h-[120px]" />
+            <AdPlaceholder className="w-full" width={728} height={90} />
 
             {/* Channel Stats - Premium Design */}
             <div className={`grid ${compareMode && compareChannel ? "md:grid-cols-2" : "grid-cols-1"} gap-6`}>
@@ -670,8 +670,8 @@ export default function DockyCount() {
                         >
                           <Star
                             className={`w-5 h-5 transition-all duration-300 ${favorites.some((f) => f.id === selectedChannel.id)
-                                ? "fill-yellow-400 text-yellow-400 drop-shadow-lg drop-shadow-yellow-400/50"
-                                : "text-gray-400 hover:text-yellow-400"
+                              ? "fill-yellow-400 text-yellow-400 drop-shadow-lg drop-shadow-yellow-400/50"
+                              : "text-gray-400 hover:text-yellow-400"
                               }`}
                           />
                         </Button>
