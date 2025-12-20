@@ -671,7 +671,7 @@ export default function DockyCount() {
 
                 {/* Search Results Dropdown */}
                 {(searchResults.length > 0 || (compareMode && searchResults2.length > 0)) && (
-                  <div className="mt-4 grid gap-4">
+                  <div className="mt-4 grid gap-4 relative z-50">
                     {searchResults.length > 0 && (
                       <div className="bg-card border border-white/10 rounded-xl overflow-hidden shadow-2xl z-20">
                         {searchResults.map((result, index) => (
