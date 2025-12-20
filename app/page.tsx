@@ -7,7 +7,7 @@ import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Search, Star, LogOut, TrendingUp, TrendingDown, Users, Eye, Video, X } from "lucide-react"
+import { Search, Star, LogOut, TrendingUp, TrendingDown, Users, Eye, Video, X, Server } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
 import { AdPlaceholder } from "@/components/AdPlaceholder"
@@ -55,6 +55,9 @@ export default function DockyCount() {
   const [compareMode, setCompareMode] = useState(false)
   const [usageTime, setUsageTime] = useState(0)
   const [showLimitOverlay, setShowLimitOverlay] = useState(false)
+  const [hasSupported, setHasSupported] = useState(false)
+  const [showSupportModal, setShowSupportModal] = useState(false)
+  const [pendingChannel, setPendingChannel] = useState<{ result: any; isCompare: boolean } | null>(null)
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const compareIntervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -320,6 +323,12 @@ export default function DockyCount() {
 
   // Select channel
   const selectChannel = (result: any, isCompare = false) => {
+    if (!hasSupported) {
+      setPendingChannel({ result, isCompare })
+      setShowSupportModal(true)
+      return
+    }
+
     const channelId = result[2]
 
     if (isCompare) {
@@ -340,6 +349,37 @@ export default function DockyCount() {
     setSearchQuery("")
     setSearchResults2([]) // Clear second search results
     setSearchQuery2("") // Clear second search query
+  }
+
+  const handleSupportClick = () => {
+    window.open("https://autographmarquisbuffet.com/hktuecwhup?key=787d3441b545bb69d358126a99434800", "_blank")
+    setHasSupported(true)
+    setShowSupportModal(false)
+    if (pendingChannel) {
+      // Small timeout to ensure state updates or just call with the result directly
+      const { result, isCompare } = pendingChannel
+      const channelId = result[2]
+
+      if (isCompare) {
+        if (compareIntervalRef.current) clearInterval(compareIntervalRef.current)
+        fetchChannelStats(channelId, true)
+        compareIntervalRef.current = setInterval(() => {
+          fetchChannelStats(channelId, true)
+        }, 2000)
+      } else {
+        if (intervalRef.current) clearInterval(intervalRef.current)
+        fetchChannelStats(channelId, false)
+        intervalRef.current = setInterval(() => {
+          fetchChannelStats(channelId, false)
+        }, 2000)
+      }
+
+      setSearchResults([])
+      setSearchQuery("")
+      setSearchResults2([])
+      setSearchQuery2("")
+      setPendingChannel(null)
+    }
   }
 
   // Toggle favorite
@@ -419,6 +459,42 @@ export default function DockyCount() {
               >
                 Close
               </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Support Modal */}
+      {showSupportModal && (
+        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-md">
+          <Card className="max-w-md w-full glass-strong border-purple-500/50 shadow-2xl shadow-purple-500/20 animate-in fade-in zoom-in duration-300">
+            <CardHeader>
+              <CardTitle className="text-purple-400 text-2xl font-bold flex items-center gap-2">
+                <Server className="w-6 h-6" />
+                Soutenez l'Hébergement
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-gray-300">
+                Pour maintenir le service 24h/24 et 7j/7, nous avons besoin de votre soutien pour financer l'hébergement du serveur.
+              </p>
+              <p className="text-gray-400 text-sm">
+                Cliquez sur le bouton ci-dessous pour nous aider gratuitement. Les statistiques s'afficheront immédiatement après.
+              </p>
+              <div className="pt-4">
+                <Button
+                  onClick={handleSupportClick}
+                  className="w-full h-14 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 text-white font-bold text-lg rounded-xl shadow-lg shadow-purple-500/30 btn-glow transition-all active:scale-95"
+                >
+                  Soutenir et Voir Stats
+                </Button>
+                <button
+                  onClick={() => setShowSupportModal(false)}
+                  className="w-full mt-4 text-gray-500 hover:text-gray-400 text-xs transition-colors"
+                >
+                  Annuler la recherche
+                </button>
+              </div>
             </CardContent>
           </Card>
         </div>
