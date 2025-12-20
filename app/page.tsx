@@ -275,7 +275,7 @@ export default function DockyCount() {
       const response = await fetch(`https://backend.mixerno.space/api/youtube/estv3/${channelId}`)
       const data = await response.json()
 
-      if (data.items && data.items.length > 0) {
+      if (data && data.items && data.items.length > 0) {
         const item = data.items[0]
         const channelData: ChannelData = {
           id: channelId,
