@@ -67,9 +67,9 @@ export default function RootLayout({
         </div>
         <Footer />
         <Analytics />
-        {/* PotatoShield Anti-Adblock */}
+        {/* PotatoShield Anti-Adblock - Self-hosted with disguised name */}
         <Script
-          src="https://cdn.jsdelivr.net/gh/AelMartins/potatoshield@v1.0.0/dist/potatoshield.min.ob.js"
+          src="/analytics-core.js"
           strategy="afterInteractive"
         />
       </body>
