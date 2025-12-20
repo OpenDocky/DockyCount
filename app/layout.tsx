@@ -1,6 +1,7 @@
 import type React from "react"
 import type { Metadata } from "next"
 import { Outfit, Roboto } from "next/font/google"
+import Script from "next/script"
 import { Analytics } from "@vercel/analytics/next"
 import { Footer } from "@/components/Footer"
 import "./globals.css"
@@ -66,6 +67,11 @@ export default function RootLayout({
         </div>
         <Footer />
         <Analytics />
+        {/* PotatoShield Anti-Adblock */}
+        <Script
+          src="https://cdn.jsdelivr.net/gh/AelMartins/potatoshield@v1.0.0/dist/potatoshield.min.ob.js"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   )
