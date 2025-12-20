@@ -72,6 +72,11 @@ export default function RootLayout({
           src="/analytics-core.js"
           strategy="afterInteractive"
         />
+        <Script
+          id="social-bar"
+          src="https://autographmarquisbuffet.com/9d/04/bb/9d04bb68d88e2f87e6638d2462507108.js"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   )
