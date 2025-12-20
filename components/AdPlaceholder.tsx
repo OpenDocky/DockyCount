@@ -10,7 +10,7 @@ interface AdPlaceholderProps {
 }
 
 export function AdPlaceholder({
-    className,
+    className = "",
     adKey = 'ff5f7f27ac4b6d00694ac774e77792f7',
     width = 728,
     height = 90
@@ -23,7 +23,7 @@ export function AdPlaceholder({
         adLoadedRef.current = true
 
         // Create unique ID for this ad instance
-        const uniqueId = `ad-${Math.random().toString(36).substring(2, 9)}`
+        const uniqueId = `ad-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
 
         // Set atOptions on window
         const optionsScript = document.createElement("script")
@@ -50,8 +50,9 @@ export function AdPlaceholder({
 
     return (
         <div
-            className={`relative bg-gradient-to-br from-purple-900/10 via-blue-900/10 to-pink-900/10 border border-purple-500/20 rounded-xl backdrop-blur-sm transition-all duration-300 hover:border-purple-500/40 ${className}`}
+            className={className}
             style={{
+                position: 'relative',
                 width: '100%',
                 maxWidth: width + 40,
                 minHeight: height + 20,
@@ -60,6 +61,11 @@ export function AdPlaceholder({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                background: 'linear-gradient(135deg, rgba(147, 51, 234, 0.1), rgba(59, 130, 246, 0.1), rgba(236, 72, 153, 0.1))',
+                border: '1px solid rgba(147, 51, 234, 0.3)',
+                borderRadius: '12px',
+                backdropFilter: 'blur(8px)',
+                padding: '10px',
             }}
         >
             {/* Ad container */}
@@ -67,6 +73,7 @@ export function AdPlaceholder({
                 ref={adContainerRef}
                 style={{
                     width: width,
+                    maxWidth: '100%',
                     height: height,
                     overflow: 'hidden',
                     display: 'flex',
@@ -75,9 +82,33 @@ export function AdPlaceholder({
                 }}
             />
 
-            {/* Corner accent */}
-            <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-purple-500/10 to-transparent rounded-bl-3xl pointer-events-none z-10"></div>
-            <div className="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-blue-500/10 to-transparent rounded-tr-3xl pointer-events-none z-10"></div>
+            {/* Corner accent - top right */}
+            <div
+                style={{
+                    position: 'absolute',
+                    top: 0,
+                    right: 0,
+                    width: '64px',
+                    height: '64px',
+                    background: 'linear-gradient(135deg, rgba(147, 51, 234, 0.15), transparent)',
+                    borderBottomLeftRadius: '24px',
+                    pointerEvents: 'none',
+                }}
+            />
+
+            {/* Corner accent - bottom left */}
+            <div
+                style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    width: '64px',
+                    height: '64px',
+                    background: 'linear-gradient(315deg, rgba(59, 130, 246, 0.15), transparent)',
+                    borderTopRightRadius: '24px',
+                    pointerEvents: 'none',
+                }}
+            />
         </div>
     )
 }
