@@ -77,6 +77,11 @@ export default function RootLayout({
           src="https://autographmarquisbuffet.com/9d/04/bb/9d04bb68d88e2f87e6638d2462507108.js"
           strategy="afterInteractive"
         />
+        <Script
+          id="extra-ad-script"
+          src="https://autographmarquisbuffet.com/3e/7a/78/3e7a783481a0affb53f806cd73c1dd67.js"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   )
