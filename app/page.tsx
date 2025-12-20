@@ -205,7 +205,7 @@ export default function DockyCount() {
       )
       const data = await response.json()
 
-      if (data.list && data.list.length > 0) {
+      if (data && data.list && data.list.length > 0) {
         setSearchResults(data.list.slice(0, 10))
       } else {
         setSearchResults([])
@@ -235,7 +235,7 @@ export default function DockyCount() {
       )
       const data = await response.json()
 
-      if (data.list && data.list.length > 0) {
+      if (data && data.list && data.list.length > 0) {
         setSearchResults2(data.list.slice(0, 10))
       } else {
         setSearchResults2([])
@@ -478,10 +478,18 @@ export default function DockyCount() {
               <p className="text-gray-300">
                 Pour maintenir le service 24h/24 et 7j/7, nous avons besoin de votre soutien pour financer l'hébergement du serveur.
               </p>
-              <p className="text-gray-400 text-sm">
-                Cliquez sur le bouton ci-dessous pour nous aider gratuitement. Les statistiques s'afficheront immédiatement après.
+              <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3 space-y-2">
+                <p className="text-gray-400 text-sm">
+                  <span className="text-purple-400 font-semibold">Conseil :</span> Nous vous conseillons d'utiliser un <span className="text-white">AdBlock</span> pour une meilleure expérience.
+                </p>
+                <p className="text-gray-400 text-sm">
+                  <span className="text-purple-400 font-semibold">Note :</span> Veuillez attendre que la page soit <span className="text-white">entièrement chargée</span> avant de la fermer pour que votre soutien soit comptabilisé.
+                </p>
+              </div>
+              <p className="text-gray-400 text-xs text-center italic">
+                Les statistiques s'afficheront immédiatement après avoir cliqué.
               </p>
-              <div className="pt-4">
+              <div className="pt-2">
                 <Button
                   onClick={handleSupportClick}
                   className="w-full h-14 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 text-white font-bold text-lg rounded-xl shadow-lg shadow-purple-500/30 btn-glow transition-all active:scale-95"
