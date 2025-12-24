@@ -71,17 +71,23 @@ function DockyCount() {
         const targetUrl = `${baseDomain}/${channelId}`
 
         try {
-            // Updated to the URL you provided: https://cuty.io/quick?token=...&url=...
-            const token = "6dfe7702a2e261bfe04f6bad2"
             const response = await fetch(`/api/shorten?url=${encodeURIComponent(targetUrl)}`)
             const data = await response.json()
-            if (data.url) {
+
+            if (response.ok && data.url) {
                 return data.url
+            } else {
+                console.error("Cuty.io Proxy Error:", data)
+                toast({
+                    title: "Erreur Cuty.io",
+                    description: data.error || "Une erreur est survenue lors de la génération du lien.",
+                    variant: "destructive"
+                })
             }
         } catch (e) {
-            console.error("Cuty.io error:", e)
+            console.error("Fetch error:", e)
         }
-        return null // Explicitly return null if failed
+        return null
     }
 
     // Load channel from Path or Search on mount
