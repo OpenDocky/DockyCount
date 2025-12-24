@@ -62,11 +62,17 @@ function DockyCount() {
     const searchParams = useSearchParams()
     const router = useRouter()
     const params = useParams()
+    const { toast } = useToast()
 
     const shortenWithCuty = async (channelId: string) => {
-        const targetUrl = `${window.location.origin}/${channelId}`
+        // Use a generic production-like URL for shortening if on localhost to avoid Cuty.io rejection
+        const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+        const baseDomain = isLocal ? "https://dockycount.vercel.app" : window.location.origin
+        const targetUrl = `${baseDomain}/${channelId}`
+
         try {
-            // Use our server-side proxy to avoid CORS
+            // Updated to the URL you provided: https://cuty.io/quick?token=...&url=...
+            const token = "6dfe7702a2e261bfe04f6bad2"
             const response = await fetch(`/api/shorten?url=${encodeURIComponent(targetUrl)}`)
             const data = await response.json()
             if (data.url) {
@@ -75,7 +81,7 @@ function DockyCount() {
         } catch (e) {
             console.error("Cuty.io error:", e)
         }
-        return targetUrl
+        return null // Explicitly return null if failed
     }
 
     // Load channel from Path or Search on mount
@@ -98,8 +104,6 @@ function DockyCount() {
     const compareIntervalRef = useRef<NodeJS.Timeout | null>(null)
     const usageIntervalRef = useRef<NodeJS.Timeout | null>(null)
     const odometerLoadedRef = useRef(false)
-
-    const { toast } = useToast()
 
     useEffect(() => {
         if (typeof window !== "undefined" && !odometerLoadedRef.current) {
@@ -344,15 +348,12 @@ function DockyCount() {
             })
             const cutyUrl = await shortenWithCuty(channelId)
 
-            // Check if shortening actually worked (URL should be different from window.location.origin)
-            const isShortened = cutyUrl.includes("cuty.io")
-
-            if (isShortened) {
+            if (cutyUrl && cutyUrl.includes("cuty.io")) {
                 window.location.href = cutyUrl
             } else {
                 toast({
                     title: "Erreur de redirection",
-                    description: "Impossible de générer le lien sécurisé. Veuillez réessayer.",
+                    description: "Impossible de générer le lien Cuty.io. Vérifiez votre connexion ou réessayez.",
                     variant: "destructive"
                 })
             }
@@ -372,7 +373,6 @@ function DockyCount() {
         setSearchResults2([])
         setSearchQuery2("")
     }
-
 
 
     const toggleFavorite = (channel: ChannelData) => {
@@ -530,8 +530,7 @@ function DockyCount() {
                                                     description: "Redirection vers le lien sécurisé...",
                                                 })
                                                 const cutyUrl = await shortenWithCuty(fav.id)
-                                                const isShortened = cutyUrl.includes("cuty.io")
-                                                if (isShortened) {
+                                                if (cutyUrl && cutyUrl.includes("cuty.io")) {
                                                     window.location.href = cutyUrl
                                                 } else {
                                                     toast({
@@ -663,7 +662,6 @@ function DockyCount() {
                                 )}
                             </CardContent>
                         </Card>
-
 
 
                         <div className={`grid ${compareMode && compareChannel ? "md:grid-cols-2" : "grid-cols-1"} gap-6`}>
