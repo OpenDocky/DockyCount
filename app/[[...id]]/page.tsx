@@ -64,30 +64,15 @@ function DockyCount() {
     const params = useParams()
     const { toast } = useToast()
 
-    const shortenWithCuty = async (channelId: string) => {
-        // Use a generic production-like URL for shortening if on localhost to avoid Cuty.io rejection
+    const shortenWithCuty = (channelId: string) => {
         const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+        // Cuty.io doesn't like localhost URLs, so we use the production domain if testing locally
         const baseDomain = isLocal ? "https://dockycount.vercel.app" : window.location.origin
         const targetUrl = `${baseDomain}/${channelId}`
 
-        try {
-            const response = await fetch(`/api/shorten?url=${encodeURIComponent(targetUrl)}`)
-            const data = await response.json()
-
-            if (response.ok && data.url) {
-                return data.url
-            } else {
-                console.error("Cuty.io Proxy Error:", data)
-                toast({
-                    title: "Erreur Cuty.io",
-                    description: data.error || "Une erreur est survenue lors de la génération du lien.",
-                    variant: "destructive"
-                })
-            }
-        } catch (e) {
-            console.error("Fetch error:", e)
-        }
-        return null
+        const token = "6dfe7702a2e261bfe04f6bad2"
+        // The Quick Link API URL is intended for direct browser redirection
+        return `https://cuty.io/quick?token=${token}&url=${encodeURIComponent(targetUrl)}`
     }
 
     // Load channel from Path or Search on mount
@@ -352,17 +337,8 @@ function DockyCount() {
                 title: "Génération du lien...",
                 description: "Redirection vers le lien sécurisé...",
             })
-            const cutyUrl = await shortenWithCuty(channelId)
-
-            if (cutyUrl && cutyUrl.includes("cuty.io")) {
-                window.location.href = cutyUrl
-            } else {
-                toast({
-                    title: "Erreur de redirection",
-                    description: "Impossible de générer le lien Cuty.io. Vérifiez votre connexion ou réessayez.",
-                    variant: "destructive"
-                })
-            }
+            const cutyUrl = shortenWithCuty(channelId)
+            window.location.href = cutyUrl
             return
         }
 
@@ -530,21 +506,13 @@ function DockyCount() {
                                     favorites.map((fav) => (
                                         <button
                                             key={fav.id}
-                                            onClick={async () => {
+                                            onClick={() => {
                                                 toast({
                                                     title: "Génération du lien...",
                                                     description: "Redirection vers le lien sécurisé...",
                                                 })
-                                                const cutyUrl = await shortenWithCuty(fav.id)
-                                                if (cutyUrl && cutyUrl.includes("cuty.io")) {
-                                                    window.location.href = cutyUrl
-                                                } else {
-                                                    toast({
-                                                        title: "Erreur de redirection",
-                                                        description: "Impossible de générer le lien sécurisé. Veuillez réessayer.",
-                                                        variant: "destructive"
-                                                    })
-                                                }
+                                                const cutyUrl = shortenWithCuty(fav.id)
+                                                window.location.href = cutyUrl
                                             }}
                                             className="w-full flex items-center gap-3 p-2.5 rounded-lg glass hover:glass-strong transition-all duration-300 text-left group hover:scale-105"
                                         >
