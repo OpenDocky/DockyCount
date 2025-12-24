@@ -64,11 +64,21 @@ function DockyCount() {
     const params = useParams()
     const { toast } = useToast()
 
-    // Anti-bypass Security with Expiry (5 minutes)
+    // Anti-bypass Security v2 - Custom Hashing
     const getVerificationToken = (id: string, timestamp: number) => {
-        // Create a token based on ID and timestamp
-        const secret = "docky_secret_2025"
-        return btoa(`${id}-${timestamp}-${secret}`).substring(0, 12).split('').reverse().join('')
+        const salt = "D0cky_X_Private_Key_v2_2025"
+        const data = `${id}|${timestamp}|${salt}`
+
+        // Custom simple hash function to make it hard to guess
+        let hash = 0
+        for (let i = 0; i < data.length; i++) {
+            const char = data.charCodeAt(i)
+            hash = ((hash << 5) - hash) + char
+            hash = hash & hash // Convert to 32bit integer
+        }
+
+        // Return as a unique base36 string
+        return Math.abs(hash).toString(36).toUpperCase()
     }
 
     const shortenWithCuty = (channelId: string) => {
@@ -97,11 +107,12 @@ function DockyCount() {
             const now = Date.now()
             const fiveMinutes = 5 * 60 * 1000
 
+            // Check for valid number and correct token
             const expectedToken = getVerificationToken(channelId, timestamp)
-            const isValidToken = vToken === expectedToken && (now - timestamp) < fiveMinutes
+            const isTimeValid = !isNaN(timestamp) && timestamp > 0 && (now - timestamp) < fiveMinutes
+            const isTokenValid = vToken === expectedToken
 
-            // If we have a valid token or if we already successfully verified THIS channel
-            if (isValidToken) {
+            if (isTokenValid && isTimeValid) {
                 setHasSupported(true)
                 if (intervalRef.current) clearInterval(intervalRef.current)
                 fetchChannelStats(channelId, false)
@@ -109,13 +120,21 @@ function DockyCount() {
                     fetchChannelStats(channelId, false)
                 }, 2000)
             } else {
-                // Only block if we haven't already verified this channel during this session
-                // We verify by checking if the stats are already loading for the right channel
                 setHasSupported(false)
                 fetchChannelStats(channelId, false)
+
+                // Show specific feedback if it's a bypass attempt or an old link
+                if (vToken && (!isTokenValid || !isTimeValid)) {
+                    toast({
+                        title: "Accès Refusé",
+                        description: !isTimeValid ? "Le lien a expiré." : "Clé de sécurité invalide.",
+                        variant: "destructive"
+                    })
+                }
             }
         }
-    }, [params.id, searchParams]) // Reduced dependencies to avoid unnecessary re-runs
+    }, [params.id, searchParams])
+    // Reduced dependencies to avoid unnecessary re-runs
 
     const intervalRef = useRef<NodeJS.Timeout | null>(null)
     const compareIntervalRef = useRef<NodeJS.Timeout | null>(null)
