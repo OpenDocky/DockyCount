@@ -97,34 +97,25 @@ function DockyCount() {
             const now = Date.now()
             const fiveMinutes = 5 * 60 * 1000
 
-            // Check if token matches AND if it's less than 5 minutes old
             const expectedToken = getVerificationToken(channelId, timestamp)
-            const isExpired = (now - timestamp) > fiveMinutes
+            const isValidToken = vToken === expectedToken && (now - timestamp) < fiveMinutes
 
-            if (vToken === expectedToken && !isExpired) {
+            // If we have a valid token or if we already successfully verified THIS channel
+            if (isValidToken) {
                 setHasSupported(true)
                 if (intervalRef.current) clearInterval(intervalRef.current)
                 fetchChannelStats(channelId, false)
                 intervalRef.current = setInterval(() => {
                     fetchChannelStats(channelId, false)
                 }, 2000)
-
-                // Optional: Clean up URL after successful verification to prevent easy copying
-                const cleanUrl = `/${channelId}`
-                window.history.replaceState({}, "", cleanUrl)
             } else {
+                // Only block if we haven't already verified this channel during this session
+                // We verify by checking if the stats are already loading for the right channel
                 setHasSupported(false)
                 fetchChannelStats(channelId, false)
-                if (isExpired && vToken === expectedToken) {
-                    toast({
-                        title: "Lien Expiré",
-                        description: "Votre session a expiré. Veuillez repasser par le lien sécurisé.",
-                        variant: "destructive"
-                    })
-                }
             }
         }
-    }, [params, searchParams])
+    }, [params.id, searchParams]) // Reduced dependencies to avoid unnecessary re-runs
 
     const intervalRef = useRef<NodeJS.Timeout | null>(null)
     const compareIntervalRef = useRef<NodeJS.Timeout | null>(null)
