@@ -64,15 +64,24 @@ function DockyCount() {
     const params = useParams()
     const { toast } = useToast()
 
+    // Anti-bypass Security
+    const getVerificationToken = (id: string) => {
+        // Simple obfuscation/hash to prevent manual bypass
+        return btoa(id).substring(0, 10).split('').reverse().join('')
+    }
+
     const shortenWithCuty = (channelId: string) => {
         const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
         // Cuty.io doesn't like localhost URLs, so we use the production domain if testing locally
         const baseDomain = isLocal ? "https://dockycount.vercel.app" : window.location.origin
-        const targetUrl = `${baseDomain}/${channelId}`
 
-        const token = "6dfe7702a2e261bfe04f6bad2"
+        // Add verification token to the destination URL
+        const token = getVerificationToken(channelId)
+        const targetUrl = `${baseDomain}/${channelId}?v=${token}`
+
+        const cutyToken = "6dfe7702a2e261bfe04f6bad2"
         // The Quick Link API URL is intended for direct browser redirection
-        return `https://cuty.io/quick?token=${token}&url=${encodeURIComponent(targetUrl)}`
+        return `https://cuty.io/quick?token=${cutyToken}&url=${encodeURIComponent(targetUrl)}`
     }
 
     // Load channel from Path or Search on mount
@@ -80,14 +89,24 @@ function DockyCount() {
         const idFromPath = params.id ? (Array.isArray(params.id) ? params.id[0] : params.id) : null
         const idFromSearch = searchParams.get("id")
         const channelId = idFromPath || idFromSearch
+        const vToken = searchParams.get("v")
 
         if (channelId && typeof channelId === "string" && channelId.startsWith("UC")) {
-            setHasSupported(true)
-            if (intervalRef.current) clearInterval(intervalRef.current)
-            fetchChannelStats(channelId, false)
-            intervalRef.current = setInterval(() => {
+            const expectedToken = getVerificationToken(channelId)
+
+            if (vToken === expectedToken) {
+                setHasSupported(true)
+                if (intervalRef.current) clearInterval(intervalRef.current)
                 fetchChannelStats(channelId, false)
-            }, 2000)
+                intervalRef.current = setInterval(() => {
+                    fetchChannelStats(channelId, false)
+                }, 2000)
+            } else {
+                setHasSupported(false)
+                // We keep the selected channel ID in state but won't show stats
+                // until hasSupported is true
+                fetchChannelStats(channelId, false)
+            }
         }
     }, [params, searchParams])
 
@@ -640,112 +659,136 @@ function DockyCount() {
 
                         <div className={`grid ${compareMode && compareChannel ? "md:grid-cols-2" : "grid-cols-1"} gap-6`}>
                             {selectedChannel && (
-                                <Card className="glass-strong border-purple-500/30 shadow-2xl shadow-purple-500/20 overflow-hidden relative group card-hover animate-in fade-in slide-in-from-left-4 duration-500">
-                                    <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 animate-pulse" />
+                                <div className="relative">
+                                    {!hasSupported && (
+                                        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center p-6 bg-black/80 backdrop-blur-xl rounded-2xl border-2 border-dashed border-purple-500/40 animate-in fade-in duration-500">
+                                            <div className="w-16 h-16 bg-purple-500/20 rounded-full flex items-center justify-center mb-6 ring-4 ring-purple-500/40 animate-pulse">
+                                                <X className="w-8 h-8 text-purple-400" />
+                                            </div>
+                                            <h3 className="text-2xl font-bold text-white mb-3 text-center">Accès Bloqué</h3>
+                                            <p className="text-gray-400 text-center mb-8 max-w-sm">
+                                                Pour voir les statistiques de <span className="text-purple-400 font-bold">{selectedChannel.name}</span>, vous devez passer par le lien sécurisé obligatoire.
+                                            </p>
+                                            <Button
+                                                onClick={() => {
+                                                    const cutyUrl = shortenWithCuty(selectedChannel.id)
+                                                    window.location.href = cutyUrl
+                                                }}
+                                                className="w-full max-w-xs h-14 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 text-white font-bold text-lg rounded-xl shadow-lg shadow-purple-500/30 btn-glow transition-all active:scale-95"
+                                            >
+                                                Débloquer les Statistiques
+                                            </Button>
+                                            <p className="text-gray-500 text-[10px] mt-6 italic">Le soutien finance l'hébergement 24/7</p>
+                                        </div>
+                                    )}
 
-                                    <CardHeader>
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-4">
-                                                <div className="relative">
-                                                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full blur-md opacity-50 group-hover:opacity-75 transition-opacity"></div>
-                                                    <img
-                                                        src={selectedChannel.avatar || "/placeholder.svg"}
-                                                        alt={selectedChannel.name}
-                                                        className="relative w-16 h-16 rounded-full border-4 border-purple-500/30 shadow-xl"
-                                                    />
-                                                    <div className="absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-lg shadow-red-500/50 animate-pulse">
-                                                        LIVE
+                                    <Card className={`glass-strong border-purple-500/30 shadow-2xl shadow-purple-500/20 overflow-hidden relative group card-hover animate-in fade-in slide-in-from-left-4 duration-500 ${!hasSupported ? 'opacity-20 pointer-events-none grayscale blur-sm' : ''}`}>
+                                        <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 animate-pulse" />
+
+                                        <CardHeader>
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="relative">
+                                                        <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full blur-md opacity-50 group-hover:opacity-75 transition-opacity"></div>
+                                                        <img
+                                                            src={selectedChannel.avatar || "/placeholder.svg"}
+                                                            alt={selectedChannel.name}
+                                                            className="relative w-16 h-16 rounded-full border-4 border-purple-500/30 shadow-xl"
+                                                        />
+                                                        <div className="absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-lg shadow-red-500/50 animate-pulse">
+                                                            LIVE
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <CardTitle className="text-xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                                                            {selectedChannel.name}
+                                                        </CardTitle>
+                                                        <p className="text-xs text-gray-400 mt-1">Updating every 2 seconds</p>
                                                     </div>
                                                 </div>
-                                                <div>
-                                                    <CardTitle className="text-xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                                                        {selectedChannel.name}
-                                                    </CardTitle>
-                                                    <p className="text-xs text-gray-400 mt-1">Updating every 2 seconds</p>
+                                                <div className="flex gap-2">
+                                                    <Button
+                                                        onClick={() => toggleFavorite(selectedChannel)}
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="hover:bg-purple-500/20 transition-all duration-300 hover:scale-110"
+                                                    >
+                                                        <Star
+                                                            className={`w-5 h-5 transition-all duration-300 ${favorites.some((f) => f.id === selectedChannel.id)
+                                                                ? "fill-yellow-400 text-yellow-400 drop-shadow-lg drop-shadow-yellow-400/50"
+                                                                : "text-gray-400 hover:text-yellow-400"
+                                                                }`}
+                                                        />
+                                                    </Button>
+                                                    <Button
+                                                        onClick={() => {
+                                                            setSelectedChannel(null)
+                                                            if (intervalRef.current) clearInterval(intervalRef.current)
+                                                            window.history.pushState({ path: "/" }, "", "/")
+                                                        }}
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="hover:bg-red-500/20 transition-all duration-300 hover:scale-110"
+                                                    >
+                                                        <X className="w-5 h-5 text-gray-400 hover:text-red-400" />
+                                                    </Button>
                                                 </div>
                                             </div>
-                                            <div className="flex gap-2">
-                                                <Button
-                                                    onClick={() => toggleFavorite(selectedChannel)}
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="hover:bg-purple-500/20 transition-all duration-300 hover:scale-110"
-                                                >
-                                                    <Star
-                                                        className={`w-5 h-5 transition-all duration-300 ${favorites.some((f) => f.id === selectedChannel.id)
-                                                            ? "fill-yellow-400 text-yellow-400 drop-shadow-lg drop-shadow-yellow-400/50"
-                                                            : "text-gray-400 hover:text-yellow-400"
-                                                            }`}
-                                                    />
-                                                </Button>
-                                                <Button
-                                                    onClick={() => {
-                                                        setSelectedChannel(null)
-                                                        if (intervalRef.current) clearInterval(intervalRef.current)
-                                                        window.history.pushState({ path: "/" }, "", "/")
-                                                    }}
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="hover:bg-red-500/20 transition-all duration-300 hover:scale-110"
-                                                >
-                                                    <X className="w-5 h-5 text-gray-400 hover:text-red-400" />
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </CardHeader>
+                                        </CardHeader>
 
-                                    <CardContent className="space-y-4">
-                                        <div className="relative glass-strong rounded-xl p-5 stat-glow-red overflow-hidden transition-all duration-300">
-                                            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-red-500/20 to-transparent rounded-full blur-2xl"></div>
-                                            <div className="relative z-10">
-                                                <div className="flex items-center gap-2 text-sm text-gray-300 mb-3">
-                                                    <Users className="w-5 h-5 text-red-400" />
-                                                    <span className="font-semibold">Subscribers</span>
-                                                </div>
-                                                <div
-                                                    id="main-subscribers"
-                                                    className="text-5xl font-[family-name:var(--font-roboto-black)] text-red-400 drop-shadow-lg drop-shadow-red-500/50"
-                                                >
-                                                    0
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="relative glass-strong rounded-xl p-4 stat-glow-blue overflow-hidden transition-all duration-300">
-                                                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-500/20 to-transparent rounded-full blur-2xl"></div>
+                                        <CardContent className="space-y-4">
+                                            <div className="relative glass-strong rounded-xl p-5 stat-glow-red overflow-hidden transition-all duration-300">
+                                                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-red-500/20 to-transparent rounded-full blur-2xl"></div>
                                                 <div className="relative z-10">
-                                                    <div className="flex items-center gap-2 text-sm text-gray-300 mb-2">
-                                                        <Eye className="w-4 h-4 text-blue-400" />
-                                                        <span className="font-medium">Views</span>
+                                                    <div className="flex items-center gap-2 text-sm text-gray-300 mb-3">
+                                                        <Users className="w-5 h-5 text-red-400" />
+                                                        <span className="font-semibold">Subscribers</span>
                                                     </div>
                                                     <div
-                                                        id="main-views"
-                                                        className="text-2xl font-[family-name:var(--font-roboto-black)] text-blue-400 drop-shadow-md drop-shadow-blue-500/50"
+                                                        id="main-subscribers"
+                                                        className="text-5xl font-[family-name:var(--font-roboto-black)] text-red-400 drop-shadow-lg drop-shadow-red-500/50"
                                                     >
                                                         0
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <div className="relative glass-strong rounded-xl p-4 stat-glow-green overflow-hidden transition-all duration-300">
-                                                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-green-500/20 to-transparent rounded-full blur-2xl"></div>
-                                                <div className="relative z-10">
-                                                    <div className="flex items-center gap-2 text-sm text-gray-300 mb-2">
-                                                        <Video className="w-4 h-4 text-green-400" />
-                                                        <span className="font-medium">Videos</span>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="relative glass-strong rounded-xl p-4 stat-glow-blue overflow-hidden transition-all duration-300">
+                                                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-500/20 to-transparent rounded-full blur-2xl"></div>
+                                                    <div className="relative z-10">
+                                                        <div className="flex items-center gap-2 text-sm text-gray-300 mb-2">
+                                                            <Eye className="w-4 h-4 text-blue-400" />
+                                                            <span className="font-medium">Views</span>
+                                                        </div>
+                                                        <div
+                                                            id="main-views"
+                                                            className="text-2xl font-[family-name:var(--font-roboto-black)] text-blue-400 drop-shadow-md drop-shadow-blue-500/50"
+                                                        >
+                                                            0
+                                                        </div>
                                                     </div>
-                                                    <div
-                                                        id="main-videos"
-                                                        className="text-2xl font-[family-name:var(--font-roboto-black)] text-green-400 drop-shadow-md drop-shadow-green-500/50"
-                                                    >
-                                                        0
+                                                </div>
+
+                                                <div className="relative glass-strong rounded-xl p-4 stat-glow-green overflow-hidden transition-all duration-300">
+                                                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-green-500/20 to-transparent rounded-full blur-2xl"></div>
+                                                    <div className="relative z-10">
+                                                        <div className="flex items-center gap-2 text-sm text-gray-300 mb-2">
+                                                            <Video className="w-4 h-4 text-green-400" />
+                                                            <span className="font-medium">Videos</span>
+                                                        </div>
+                                                        <div
+                                                            id="main-videos"
+                                                            className="text-2xl font-[family-name:var(--font-roboto-black)] text-green-400 drop-shadow-md drop-shadow-green-500/50"
+                                                        >
+                                                            0
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                                        </CardContent>
+                                    </Card>
+                                </div>
                             )}
 
                             {compareMode && compareChannel && (
