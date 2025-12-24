@@ -7,10 +7,9 @@ import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Search, Star, LogOut, TrendingUp, TrendingDown, Users, Eye, Video, X, Server } from "lucide-react"
+import { Search, Star, LogOut, TrendingUp, TrendingDown, Users, Eye, Video, X } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
-import { AdPlaceholder } from "@/components/AdPlaceholder"
 import Script from "next/script"
 import { useSearchParams, useRouter, useParams } from "next/navigation"
 
@@ -58,7 +57,6 @@ function DockyCount() {
     const [usageTime, setUsageTime] = useState(0)
     const [showLimitOverlay, setShowLimitOverlay] = useState(false)
     const [hasSupported, setHasSupported] = useState(false)
-    const [showSupportModal, setShowSupportModal] = useState(false)
     const [pendingChannel, setPendingChannel] = useState<{ result: any; isCompare: boolean } | null>(null)
 
     const searchParams = useSearchParams()
@@ -345,7 +343,19 @@ function DockyCount() {
                 description: "Redirection vers le lien sécurisé...",
             })
             const cutyUrl = await shortenWithCuty(channelId)
-            window.location.href = cutyUrl
+
+            // Check if shortening actually worked (URL should be different from window.location.origin)
+            const isShortened = cutyUrl.includes("cuty.io")
+
+            if (isShortened) {
+                window.location.href = cutyUrl
+            } else {
+                toast({
+                    title: "Erreur de redirection",
+                    description: "Impossible de générer le lien sécurisé. Veuillez réessayer.",
+                    variant: "destructive"
+                })
+            }
             return
         }
 
@@ -363,16 +373,7 @@ function DockyCount() {
         setSearchQuery2("")
     }
 
-    const handleSupportClick = () => {
-        window.open("https://autographmarquisbuffet.com/hktuecwhup?key=787d3441b545bb69d358126a99434800", "_blank")
-        setHasSupported(true)
-        setShowSupportModal(false)
-        if (pendingChannel) {
-            const { result, isCompare } = pendingChannel
-            selectChannel(result, isCompare)
-            setPendingChannel(null)
-        }
-    }
+
 
     const toggleFavorite = (channel: ChannelData) => {
         if (!user) {
@@ -451,49 +452,7 @@ function DockyCount() {
                 </div>
             )}
 
-            {/* Support Modal */}
-            {showSupportModal && (
-                <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-md">
-                    <Card className="max-w-md w-full glass-strong border-purple-500/50 shadow-2xl shadow-purple-500/20 animate-in fade-in zoom-in duration-300">
-                        <CardHeader>
-                            <CardTitle className="text-purple-400 text-2xl font-bold flex items-center gap-2">
-                                <Server className="w-6 h-6" />
-                                Soutenez l'Hébergement
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <p className="text-gray-300">
-                                Pour maintenir le service 24h/24 et 7j/7, nous avons besoin de votre soutien pour financer l'hébergement du serveur.
-                            </p>
-                            <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3 space-y-2">
-                                <p className="text-gray-400 text-sm">
-                                    <span className="text-purple-400 font-semibold">Conseil :</span> Nous vous conseillons d'utiliser un <span className="text-white">AdBlock</span> pour une meilleure expérience.
-                                </p>
-                                <p className="text-gray-400 text-sm">
-                                    <span className="text-purple-400 font-semibold">Note :</span> Veuillez attendre que la page soit <span className="text-white">entièrement chargée</span> avant de la fermer pour que votre soutien soit comptabilisé.
-                                </p>
-                            </div>
-                            <p className="text-gray-400 text-xs text-center italic">
-                                Les statistiques s'afficheront immédiatement après avoir cliqué.
-                            </p>
-                            <div className="pt-2">
-                                <Button
-                                    onClick={handleSupportClick}
-                                    className="w-full h-14 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 text-white font-bold text-lg rounded-xl shadow-lg shadow-purple-500/30 btn-glow transition-all active:scale-95"
-                                >
-                                    Soutenir et Voir Stats
-                                </Button>
-                                <button
-                                    onClick={() => setShowSupportModal(false)}
-                                    className="w-full mt-4 text-gray-500 hover:text-gray-400 text-xs transition-colors"
-                                >
-                                    Annuler la recherche
-                                </button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            )}
+
 
             {/* Modern Header with Gradient */}
             <header className="sticky top-0 z-40 border-b border-purple-500/20 glass-strong shadow-lg shadow-purple-500/5">
@@ -571,7 +530,16 @@ function DockyCount() {
                                                     description: "Redirection vers le lien sécurisé...",
                                                 })
                                                 const cutyUrl = await shortenWithCuty(fav.id)
-                                                window.location.href = cutyUrl
+                                                const isShortened = cutyUrl.includes("cuty.io")
+                                                if (isShortened) {
+                                                    window.location.href = cutyUrl
+                                                } else {
+                                                    toast({
+                                                        title: "Erreur de redirection",
+                                                        description: "Impossible de générer le lien sécurisé. Veuillez réessayer.",
+                                                        variant: "destructive"
+                                                    })
+                                                }
                                             }}
                                             className="w-full flex items-center gap-3 p-2.5 rounded-lg glass hover:glass-strong transition-all duration-300 text-left group hover:scale-105"
                                         >
@@ -586,7 +554,7 @@ function DockyCount() {
                                 )}
                             </CardContent>
                         </Card>
-                        <AdPlaceholder className="w-full" width={300} height={250} />
+
                     </aside>
 
                     <main className="lg:col-span-9 space-y-8">
@@ -696,7 +664,7 @@ function DockyCount() {
                             </CardContent>
                         </Card>
 
-                        <AdPlaceholder className="w-full" width={728} height={90} />
+
 
                         <div className={`grid ${compareMode && compareChannel ? "md:grid-cols-2" : "grid-cols-1"} gap-6`}>
                             {selectedChannel && (
@@ -981,16 +949,7 @@ function DockyCount() {
                             </div>
                         </div>
 
-                        <div className="mt-8">
-                            <div id="container-7af5a7128095f6499b5e5fead25034bd" className="flex justify-center"></div>
-                            <Script
-                                src="https://autographmarquisbuffet.com/7af5a7128095f6499b5e5fead25034bd/invoke.js"
-                                strategy="afterInteractive"
-                                data-cfasync="false"
-                                async={true}
-                            />
-                        </div>
-                        <AdPlaceholder className="w-full" width={728} height={90} />
+
                     </main>
                 </div>
             </div>
