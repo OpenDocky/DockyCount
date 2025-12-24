@@ -94,6 +94,12 @@ function DockyCount() {
         return `https://cuty.io/quick?token=${cutyToken}&url=${encodeURIComponent(targetUrl)}`
     }
 
+    const intervalRef = useRef<NodeJS.Timeout | null>(null)
+    const compareIntervalRef = useRef<NodeJS.Timeout | null>(null)
+    const usageIntervalRef = useRef<NodeJS.Timeout | null>(null)
+    const odometerLoadedRef = useRef(false)
+    const authorizedChannelRef = useRef<string | null>(null)
+
     // Load channel from Path or Search on mount
     useEffect(() => {
         const idFromPath = params.id ? (Array.isArray(params.id) ? params.id[0] : params.id) : null
@@ -103,44 +109,53 @@ function DockyCount() {
         const tParam = searchParams.get("t")
 
         if (channelId && typeof channelId === "string" && channelId.startsWith("UC")) {
+            // Check if we already authorized this channel in this session
+            if (authorizedChannelRef.current === channelId) {
+                setHasSupported(true)
+                if (intervalRef.current) clearInterval(intervalRef.current)
+                fetchChannelStats(channelId, false)
+                intervalRef.current = setInterval(() => {
+                    fetchChannelStats(channelId, false)
+                }, 2000)
+                return
+            }
+
             const timestamp = parseInt(tParam || "0")
             const now = Date.now()
 
-            // Single-use logic: The window is very narrow (max 2 minutes for the redirect to happen)
-            // and we check if this specific token was already used in this session
-            const twoMinutes = 2 * 60 * 1000
+            // Allow 5 minutes window and handle slight clock drift (Math.abs)
+            const fiveMinutes = 5 * 60 * 1000
             const expectedToken = getVerificationToken(channelId, timestamp)
-            const isTimeValid = !isNaN(timestamp) && timestamp > 0 && (now - timestamp) < twoMinutes
+            const isTimeValid = !isNaN(timestamp) && timestamp > 0 && Math.abs(now - timestamp) < fiveMinutes
             const isTokenValid = vToken === expectedToken
 
-            // Check if token was already marked as used in this session to prevent re-use
             const isAlreadyUsed = vToken ? sessionStorage.getItem(`used_${vToken}`) : false
 
             if (isTokenValid && isTimeValid && !isAlreadyUsed) {
-                // SUCCESS: Mark as supported for the current session state
                 setHasSupported(true)
+                authorizedChannelRef.current = channelId // Lock in memory
 
-                // Mark this specific token as used so it can't be used again
                 if (vToken) sessionStorage.setItem(`used_${vToken}`, "true")
 
-                // CLEAN URL IMMEDIATELY: This makes it single-use (refreshing will block)
-                const newUrl = `/${channelId}`
-                window.history.replaceState({}, "", newUrl)
+                // Only clean URL if we actually arrived with tokens
+                if (vToken || tParam) {
+                    const newUrl = `/${channelId}`
+                    window.history.replaceState({}, "", newUrl)
+                }
 
                 if (intervalRef.current) clearInterval(intervalRef.current)
                 fetchChannelStats(channelId, false)
                 intervalRef.current = setInterval(() => {
                     fetchChannelStats(channelId, false)
                 }, 2000)
-            } else if (!hasSupported) {
-                // If not already supported from a previous valid token in this session
+            } else {
                 setHasSupported(false)
                 fetchChannelStats(channelId, false)
 
-                if (vToken) {
+                if (vToken && (!isTokenValid || !isTimeValid || isAlreadyUsed)) {
                     toast({
-                        title: "Lien Invalide ou Déjà utilisé",
-                        description: "Ce lien de redirection est à usage unique. Veuillez repasser par le lien sécurisé.",
+                        title: "Accès Refusé",
+                        description: isAlreadyUsed ? "Lien déjà utilisé." : "Clé invalide ou expirée.",
                         variant: "destructive"
                     })
                 }
@@ -148,11 +163,6 @@ function DockyCount() {
         }
     }, [params.id, searchParams])
     // Reduced dependencies to avoid unnecessary re-runs
-
-    const intervalRef = useRef<NodeJS.Timeout | null>(null)
-    const compareIntervalRef = useRef<NodeJS.Timeout | null>(null)
-    const usageIntervalRef = useRef<NodeJS.Timeout | null>(null)
-    const odometerLoadedRef = useRef(false)
 
     useEffect(() => {
         if (typeof window !== "undefined" && !odometerLoadedRef.current) {
