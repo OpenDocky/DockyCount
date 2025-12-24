@@ -105,29 +105,42 @@ function DockyCount() {
         if (channelId && typeof channelId === "string" && channelId.startsWith("UC")) {
             const timestamp = parseInt(tParam || "0")
             const now = Date.now()
-            const fiveMinutes = 5 * 60 * 1000
 
-            // Check for valid number and correct token
+            // Single-use logic: The window is very narrow (max 2 minutes for the redirect to happen)
+            // and we check if this specific token was already used in this session
+            const twoMinutes = 2 * 60 * 1000
             const expectedToken = getVerificationToken(channelId, timestamp)
-            const isTimeValid = !isNaN(timestamp) && timestamp > 0 && (now - timestamp) < fiveMinutes
+            const isTimeValid = !isNaN(timestamp) && timestamp > 0 && (now - timestamp) < twoMinutes
             const isTokenValid = vToken === expectedToken
 
-            if (isTokenValid && isTimeValid) {
+            // Check if token was already marked as used in this session to prevent re-use
+            const isAlreadyUsed = vToken ? sessionStorage.getItem(`used_${vToken}`) : false
+
+            if (isTokenValid && isTimeValid && !isAlreadyUsed) {
+                // SUCCESS: Mark as supported for the current session state
                 setHasSupported(true)
+
+                // Mark this specific token as used so it can't be used again
+                if (vToken) sessionStorage.setItem(`used_${vToken}`, "true")
+
+                // CLEAN URL IMMEDIATELY: This makes it single-use (refreshing will block)
+                const newUrl = `/${channelId}`
+                window.history.replaceState({}, "", newUrl)
+
                 if (intervalRef.current) clearInterval(intervalRef.current)
                 fetchChannelStats(channelId, false)
                 intervalRef.current = setInterval(() => {
                     fetchChannelStats(channelId, false)
                 }, 2000)
-            } else {
+            } else if (!hasSupported) {
+                // If not already supported from a previous valid token in this session
                 setHasSupported(false)
                 fetchChannelStats(channelId, false)
 
-                // Show specific feedback if it's a bypass attempt or an old link
-                if (vToken && (!isTokenValid || !isTimeValid)) {
+                if (vToken) {
                     toast({
-                        title: "Accès Refusé",
-                        description: !isTimeValid ? "Le lien a expiré." : "Clé de sécurité invalide.",
+                        title: "Lien Invalide ou Déjà utilisé",
+                        description: "Ce lien de redirection est à usage unique. Veuillez repasser par le lien sécurisé.",
                         variant: "destructive"
                     })
                 }
