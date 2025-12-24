@@ -43,7 +43,10 @@ interface Favorite {
     avatar: string
 }
 
+export const dynamic = "force-dynamic"
+
 function DockyCount() {
+    const [mounted, setMounted] = useState(false)
     const [user, setUser] = useState<User | null>(null)
     const [searchQuery, setSearchQuery] = useState("")
     const [searchQuery2, setSearchQuery2] = useState("")
@@ -63,6 +66,10 @@ function DockyCount() {
     const router = useRouter()
     const params = useParams()
     const { toast } = useToast()
+
+    useEffect(() => {
+        setMounted(true)
+    }, [])
 
     // Anti-bypass Security v2 - Custom Hashing
     const getVerificationToken = (id: string, timestamp: number) => {
@@ -473,6 +480,8 @@ function DockyCount() {
         const secs = seconds % 60
         return `${hours}h ${minutes}m ${secs}s`
     }
+
+    if (!mounted) return null
 
     return (
         <div className="min-h-screen bg-background text-white relative overflow-x-hidden">
