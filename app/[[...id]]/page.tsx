@@ -64,23 +64,23 @@ function DockyCount() {
     const params = useParams()
     const { toast } = useToast()
 
-    // Anti-bypass Security
-    const getVerificationToken = (id: string) => {
-        // Simple obfuscation/hash to prevent manual bypass
-        return btoa(id).substring(0, 10).split('').reverse().join('')
+    // Anti-bypass Security with Expiry (5 minutes)
+    const getVerificationToken = (id: string, timestamp: number) => {
+        // Create a token based on ID and timestamp
+        const secret = "docky_secret_2025"
+        return btoa(`${id}-${timestamp}-${secret}`).substring(0, 12).split('').reverse().join('')
     }
 
     const shortenWithCuty = (channelId: string) => {
         const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-        // Cuty.io doesn't like localhost URLs, so we use the production domain if testing locally
         const baseDomain = isLocal ? "https://dockycount.vercel.app" : window.location.origin
 
-        // Add verification token to the destination URL
-        const token = getVerificationToken(channelId)
-        const targetUrl = `${baseDomain}/${channelId}?v=${token}`
+        // Add current timestamp to the token
+        const now = Date.now()
+        const token = getVerificationToken(channelId, now)
+        const targetUrl = `${baseDomain}/${channelId}?v=${token}&t=${now}`
 
         const cutyToken = "6dfe7702a2e261bfe04f6bad2"
-        // The Quick Link API URL is intended for direct browser redirection
         return `https://cuty.io/quick?token=${cutyToken}&url=${encodeURIComponent(targetUrl)}`
     }
 
@@ -90,22 +90,38 @@ function DockyCount() {
         const idFromSearch = searchParams.get("id")
         const channelId = idFromPath || idFromSearch
         const vToken = searchParams.get("v")
+        const tParam = searchParams.get("t")
 
         if (channelId && typeof channelId === "string" && channelId.startsWith("UC")) {
-            const expectedToken = getVerificationToken(channelId)
+            const timestamp = parseInt(tParam || "0")
+            const now = Date.now()
+            const fiveMinutes = 5 * 60 * 1000
 
-            if (vToken === expectedToken) {
+            // Check if token matches AND if it's less than 5 minutes old
+            const expectedToken = getVerificationToken(channelId, timestamp)
+            const isExpired = (now - timestamp) > fiveMinutes
+
+            if (vToken === expectedToken && !isExpired) {
                 setHasSupported(true)
                 if (intervalRef.current) clearInterval(intervalRef.current)
                 fetchChannelStats(channelId, false)
                 intervalRef.current = setInterval(() => {
                     fetchChannelStats(channelId, false)
                 }, 2000)
+
+                // Optional: Clean up URL after successful verification to prevent easy copying
+                const cleanUrl = `/${channelId}`
+                window.history.replaceState({}, "", cleanUrl)
             } else {
                 setHasSupported(false)
-                // We keep the selected channel ID in state but won't show stats
-                // until hasSupported is true
                 fetchChannelStats(channelId, false)
+                if (isExpired && vToken === expectedToken) {
+                    toast({
+                        title: "Lien Expiré",
+                        description: "Votre session a expiré. Veuillez repasser par le lien sécurisé.",
+                        variant: "destructive"
+                    })
+                }
             }
         }
     }, [params, searchParams])
