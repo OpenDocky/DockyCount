@@ -1,400 +1,179 @@
 @import "tailwindcss";
+
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Modern Vibrant Theme Palette - Premium Design */
-  --background: #0a0118;
-  /* Deep purple-black */
+  /* Neo-Glass Design System */
+  --background: #000000;
   --foreground: #ffffff;
 
-  --card: rgba(23, 12, 43, 0.6);
-  /* Glassmorphism purple */
-  --card-foreground: #ffffff;
+  --primary: #a855f7;
+  /* Purple */
+  --secondary: #06b6d4;
+  /* Teal */
 
-  --popover: rgba(23, 12, 43, 0.95);
-  --popover-foreground: #ffffff;
-
-  --primary: #8b5cf6;
-  /* Vibrant Purple */
-  --primary-foreground: #ffffff;
-
-  --secondary: #3b82f6;
-  /* Vibrant Blue */
-  --secondary-foreground: #ffffff;
-
-  --accent: #ec4899;
-  /* Vibrant Pink */
-  --accent-foreground: #ffffff;
-
-  --success: #10b981;
-  /* Vibrant Green */
-  --success-foreground: #ffffff;
-
-  --muted: rgba(148, 163, 184, 0.1);
-  --muted-foreground: #94a3b8;
-
-  --destructive: #ef4444;
-  --destructive-foreground: #ffffff;
-
-  --border: rgba(139, 92, 246, 0.2);
-  --input: rgba(139, 92, 246, 0.1);
-  --ring: #8b5cf6;
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-hover: rgba(255, 255, 255, 0.15);
 
   --radius: 1rem;
-
-  /* Gradient Variables */
-  --gradient-primary: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 50%, #06b6d4 100%);
-  --gradient-secondary: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
-  --gradient-accent: linear-gradient(135deg, #06b6d4 0%, #3b82f6 50%, #8b5cf6 100%);
-  --gradient-warm: linear-gradient(135deg, #f59e0b 0%, #ec4899 50%, #8b5cf6 100%);
-
-  --sidebar: rgba(10, 1, 24, 0.8);
-  --sidebar-foreground: #ffffff;
-  --sidebar-primary: #8b5cf6;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: rgba(139, 92, 246, 0.1);
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: rgba(139, 92, 246, 0.2);
-  --sidebar-ring: #8b5cf6;
-}
-
-/* Force dark mode with vibrant theme */
-.dark {
-  --background: #0a0118;
-  --foreground: #ffffff;
-  --card: rgba(23, 12, 43, 0.6);
-  --card-foreground: #ffffff;
-  --popover: rgba(23, 12, 43, 0.95);
-  --popover-foreground: #ffffff;
-  --primary: #8b5cf6;
-  --primary-foreground: #ffffff;
-  --secondary: #3b82f6;
-  --secondary-foreground: #ffffff;
-  --accent: #ec4899;
-  --accent-foreground: #ffffff;
-  --muted: rgba(148, 163, 184, 0.1);
-  --muted-foreground: #94a3b8;
-  --destructive: #ef4444;
-  --destructive-foreground: #ffffff;
-  --border: rgba(139, 92, 246, 0.2);
-  --input: rgba(139, 92, 246, 0.1);
-  --ring: #8b5cf6;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-display: "Outfit", sans-serif;
 }
 
 @theme inline {
-  --font-sans: "Outfit", "Inter", sans-serif;
-  --font-mono: "Geist Mono", monospace;
-  --font-roboto-black: var(--font-roboto-black);
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
 
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-
   body {
-    @apply bg-background text-foreground;
-    background: radial-gradient(ellipse at top, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
-      radial-gradient(ellipse at bottom, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
-      #0a0118;
+    @apply bg-black text-white antialiased selection:bg-primary/30 selection:text-white font-sans;
+    background-color: #000000;
+    position: relative;
+    min-height: 100vh;
+    overflow-x: hidden;
   }
 
-  /* Smooth scrolling */
-  html {
-    scroll-behavior: smooth;
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background-image:
+      linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+    mask-image: radial-gradient(circle at center, black, transparent 80%);
+  }
+
+  /* Orbs based on image */
+  .bg-orbs {
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .orb-1 {
+    position: absolute;
+    top: -10%;
+    left: -10%;
+    width: 60vw;
+    height: 60vw;
+    background: radial-gradient(circle at center, rgba(168, 85, 247, 0.15), transparent 70%);
+    filter: blur(80px);
+    animation: pulse 15s ease-in-out infinite alternate;
+  }
+
+  .orb-2 {
+    position: absolute;
+    bottom: -10%;
+    right: -10%;
+    width: 60vw;
+    height: 60vw;
+    background: radial-gradient(circle at center, rgba(6, 182, 212, 0.15), transparent 70%);
+    filter: blur(80px);
+    animation: pulse 12s ease-in-out infinite alternate-reverse;
+  }
+
+  @keyframes pulse {
+    0% {
+      transform: scale(1) translate(0, 0);
+    }
+
+    100% {
+      transform: scale(1.1) translate(20px, 20px);
+    }
   }
 }
 
-/* Premium Animations & Micro-interactions */
-@keyframes glow-pulse {
+/* --- GLASS COMPONENTS --- */
 
-  0%,
-  100% {
-    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
-  }
-
-  50% {
-    box-shadow: 0 0 40px rgba(139, 92, 246, 0.6), 0 0 60px rgba(139, 92, 246, 0.3);
-  }
-}
-
-@keyframes gradient-shift {
-
-  0%,
-  100% {
-    background-position: 0% 50%;
-  }
-
-  50% {
-    background-position: 100% 50%;
-  }
-}
-
-@keyframes float {
-
-  0%,
-  100% {
-    transform: translateY(0px);
-  }
-
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: -1000px 0;
-  }
-
-  100% {
-    background-position: 1000px 0;
-  }
-}
-
-/* Glassmorphism utility classes */
-.glass {
-  background: rgba(23, 12, 43, 0.6);
+.glass-panel {
+  background: var(--glass-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.glass-strong {
-  background: rgba(23, 12, 43, 0.8);
-  backdrop-filter: blur(30px);
-  -webkit-backdrop-filter: blur(30px);
-  border: 1px solid rgba(139, 92, 246, 0.3);
+.glass-panel:hover {
+  border-color: var(--glass-border-hover);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
 }
 
-/* Gradient text */
-.gradient-text {
-  background: var(--gradient-primary);
-  background-size: 200% 200%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: gradient-shift 8s ease infinite;
+.glass-card {
+  @apply rounded-2xl border border-white/5 bg-white/[0.02] backdrop-blur-xl transition-all duration-500 hover:border-white/10 hover:bg-white/[0.04];
 }
 
-.gradient-text-pink {
-  background: var(--gradient-secondary);
-  background-size: 200% 200%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: gradient-shift 8s ease infinite;
+.glass-btn {
+  @apply flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-3 font-medium text-white transition-all duration-300 hover:bg-white/10 hover:border-white/20 active:scale-95 disabled:opacity-50;
 }
 
-/* Card hover effects */
-.card-hover {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.glass-input {
+  @apply w-full rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-white placeholder:text-white/30 focus:border-primary/50 focus:bg-white/10 focus:outline-none transition-all duration-300;
 }
 
-.card-hover:hover {
-  transform: translateY(-4px) scale(1.01);
-  box-shadow: 0 20px 60px rgba(139, 92, 246, 0.3);
-  border-color: rgba(139, 92, 246, 0.5);
+.text-gradient {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-white to-secondary;
 }
 
-/* Button animations */
-.btn-glow {
-  position: relative;
-  overflow: hidden;
-  transition: all 0.3s ease;
+.glow-primary {
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.2);
 }
 
-.btn-glow::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  transform: translate(-50%, -50%);
-  transition: width 0.6s, height 0.6s;
+.glow-secondary {
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.2);
 }
 
-.btn-glow:hover::before {
-  width: 300px;
-  height: 300px;
+/* HUD / Interface Elements */
+.hud-label {
+  @apply text-[10px] uppercase tracking-[0.2em] font-bold text-white/40;
 }
 
-.btn-glow:hover {
-  box-shadow: 0 0 30px rgba(139, 92, 246, 0.6);
-  transform: scale(1.05);
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
 }
 
-/* Shimmer effect for loading states */
-.shimmer {
-  background: linear-gradient(90deg,
-      rgba(255, 255, 255, 0) 0%,
-      rgba(255, 255, 255, 0.1) 50%,
-      rgba(255, 255, 255, 0) 100%);
-  background-size: 1000px 100%;
-  animation: shimmer 2s infinite;
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-/* Stat card glow effects */
-.stat-glow-red {
-  box-shadow: 0 0 30px rgba(239, 68, 68, 0.2);
-  transition: box-shadow 0.3s ease;
+::-webkit-scrollbar-thumb {
+  @apply bg-white/10 rounded-full;
 }
 
-.stat-glow-red:hover {
-  box-shadow: 0 0 40px rgba(239, 68, 68, 0.4);
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-white/20;
 }
 
-.stat-glow-blue {
-  box-shadow: 0 0 30px rgba(59, 130, 246, 0.2);
-  transition: box-shadow 0.3s ease;
+/* Animation utilities */
+.reveal {
+  animation: reveal 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
-.stat-glow-blue:hover {
-  box-shadow: 0 0 40px rgba(59, 130, 246, 0.4);
-}
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
 
-.stat-glow-green {
-  box-shadow: 0 0 30px rgba(16, 185, 129, 0.2);
-  transition: box-shadow 0.3s ease;
-}
-
-.stat-glow-green:hover {
-  box-shadow: 0 0 40px rgba(16, 185, 129, 0.4);
-}
-
-.stat-glow-purple {
-  box-shadow: 0 0 30px rgba(139, 92, 246, 0.2);
-  transition: box-shadow 0.3s ease;
-}
-
-.stat-glow-purple:hover {
-  box-shadow: 0 0 40px rgba(139, 92, 246, 0.4);
-}
-
-/* Odometer.js styles */
-.odometer.odometer-auto-theme,
-.odometer.odometer-theme-default {
-  display: inline-block;
-  vertical-align: middle;
-  position: relative;
-  font-family: var(--font-roboto-black) !important;
-}
-
-.odometer.odometer-auto-theme .odometer-digit,
-.odometer.odometer-theme-default .odometer-digit {
-  display: inline-block;
-  vertical-align: middle;
-  position: relative;
-}
-
-.odometer.odometer-auto-theme .odometer-digit .odometer-digit-spacer,
-.odometer.odometer-theme-default .odometer-digit .odometer-digit-spacer {
-  display: inline-block;
-  vertical-align: middle;
-  visibility: hidden;
-}
-
-.odometer.odometer-auto-theme .odometer-digit .odometer-digit-inner,
-.odometer.odometer-theme-default .odometer-digit .odometer-digit-inner {
-  text-align: left;
-  display: block;
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  overflow: hidden;
-}
-
-.odometer.odometer-auto-theme .odometer-digit .odometer-ribbon,
-.odometer.odometer-theme-default .odometer-digit .odometer-ribbon {
-  display: block;
-}
-
-.odometer.odometer-auto-theme .odometer-digit .odometer-ribbon-inner,
-.odometer.odometer-theme-default .odometer-digit .odometer-ribbon-inner {
-  display: block;
-  -webkit-backface-visibility: hidden;
-}
-
-.odometer.odometer-auto-theme .odometer-digit .odometer-value,
-.odometer.odometer-theme-default .odometer-digit .odometer-value {
-  display: block;
-  -webkit-transform: translateZ(0);
-}
-
-.odometer.odometer-auto-theme .odometer-digit .odometer-value.odometer-last-value,
-.odometer.odometer-theme-default .odometer-digit .odometer-value.odometer-last-value {
-  position: absolute;
-}
-
-.odometer.odometer-auto-theme.odometer-animating-up .odometer-ribbon-inner,
-.odometer.odometer-theme-default.odometer-animating-up .odometer-ribbon-inner {
-  -webkit-transition: -webkit-transform 2s;
-  -moz-transition: -moz-transform 2s;
-  -ms-transition: -ms-transform 2s;
-  -o-transition: -o-transform 2s;
-  transition: transform 2s;
-}
-
-.odometer.odometer-auto-theme.odometer-animating-up.odometer-animating .odometer-ribbon-inner,
-.odometer.odometer-theme-default.odometer-animating-up.odometer-animating .odometer-ribbon-inner {
-  -webkit-transform: translateY(-100%);
-  -moz-transform: translateY(-100%);
-  -ms-transform: translateY(-100%);
-  -o-transform: translateY(-100%);
-  transform: translateY(-100%);
-}
-
-.odometer.odometer-auto-theme.odometer-animating-down .odometer-ribbon-inner,
-.odometer.odometer-theme-default.odometer-animating-down .odometer-ribbon-inner {
-  -webkit-transform: translateY(-100%);
-  -moz-transform: translateY(-100%);
-  -ms-transform: translateY(-100%);
-  -o-transform: translateY(-100%);
-  transform: translateY(-100%);
-}
-
-.odometer.odometer-auto-theme.odometer-animating-down.odometer-animating .odometer-ribbon-inner,
-.odometer.odometer-theme-default.odometer-animating-down.odometer-animating .odometer-ribbon-inner {
-  -webkit-transition: -webkit-transform 2s;
-  -moz-transition: -moz-transform 2s;
-  -ms-transition: -ms-transform 2s;
-  -o-transition: -o-transform 2s;
-  transition: transform 2s;
-  -webkit-transform: translateY(0);
-  -moz-transform: translateY(0);
-  -ms-transform: translateY(0);
-  -o-transform: translateY(0);
-  transform: translateY(0);
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

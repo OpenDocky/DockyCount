@@ -7,7 +7,7 @@ import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Search, Star, LogOut, TrendingUp, TrendingDown, Users, Eye, Video, X } from "lucide-react"
+import { Search, Star, LogOut, TrendingUp, TrendingDown, Users, Eye, Video, X, Lock, Cpu, Zap, Activity, HardDrive, Shield, BarChart3, Terminal } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
 import Script from "next/script"
@@ -489,73 +489,85 @@ function DockyCount() {
 
             {/* Limit Overlay */}
             {showLimitOverlay && (
-                <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-md">
-                    <Card className="max-w-md w-full glass-strong border-red-500/50 shadow-2xl shadow-red-500/20 animate-in fade-in zoom-in duration-300">
-                        <CardHeader>
-                            <CardTitle className="text-red-400 text-2xl font-bold flex items-center gap-2">
-                                <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
-                                Usage Limit Reached
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <p className="text-gray-300">You have reached the daily usage limit of 1 hour.</p>
-                            <p className="text-gray-400 text-sm">Come back tomorrow to continue using DockyCount!</p>
-                            <Button
-                                onClick={() => window.location.reload()}
-                                className="w-full bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-semibold btn-glow"
-                            >
-                                Close
-                            </Button>
-                        </CardContent>
-                    </Card>
+                <div className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4 backdrop-blur-xl">
+                    <div className="max-w-md w-full cyber-panel border-red-500/50 p-8 animate-in fade-in zoom-in duration-500">
+                        <div className="hud-corner hud-tl"></div>
+                        <div className="hud-corner hud-tr border-red-500"></div>
+                        <div className="hud-corner hud-bl border-red-500"></div>
+                        <div className="hud-corner hud-br border-red-500"></div>
+
+                        <div className="text-red-500 text-3xl font-black mb-6 flex items-center gap-3">
+                            <Activity className="w-8 h-8 animate-pulse" />
+                            CRITICAL_LIMIT
+                        </div>
+                        <div className="space-y-4 font-mono text-sm">
+                            <p className="text-red-400">SESSION_TERMINATED: DAILY_QUOTA_EXCEEDED</p>
+                            <p className="text-gray-500 mt-4 leading-relaxed">
+                                Neural-Link connection hours have exceeded safety parameters (1h).
+                                Syntactic buffers require 24h cooldown period.
+                            </p>
+                            <div className="pt-6">
+                                <button
+                                    onClick={() => window.location.reload()}
+                                    className="w-full cyber-btn border-red-500 text-red-500 hover:bg-red-500 hover:text-black"
+                                >
+                                    REINITIALIZE_BUFFER
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
 
 
 
             {/* Modern Header with Gradient */}
-            <header className="sticky top-0 z-40 border-b border-purple-500/20 glass-strong shadow-lg shadow-purple-500/5">
+            <header className="sticky top-0 z-40 bg-black/60 backdrop-blur-md border-b border-primary/20">
                 <div className="container mx-auto px-4 py-4">
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 via-pink-500 to-blue-500 rounded-xl flex items-center justify-center font-bold text-xl shadow-lg shadow-purple-500/30 animate-in zoom-in duration-500">
-                                DC
+                        <div className="flex items-center gap-6">
+                            <div className="group hidden md:block">
+                                <div className="text-[10px] text-primary/60 font-mono tracking-widest mb-0.5">NEURAL_DOMAIN</div>
+                                <div className="text-xl font-black tracking-tighter neon-text">SYS_STATS // v2.6.0</div>
                             </div>
-                            <div>
-                                <h1 className="text-2xl font-bold gradient-text">DockyCount</h1>
-                                <p className="text-xs text-gray-400">Real-Time YouTube Stats</p>
+                            <div className="w-px h-8 bg-white/10 hidden md:block"></div>
+                            <div className="flex flex-col">
+                                <span className="text-[10px] uppercase tracking-widest text-primary font-bold">Terminal Status</span>
+                                <span className="text-xs font-mono text-white/50">CONNECTED // ENCRYPTED</span>
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-4">
-                            <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg glass">
-                                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                                <span className="text-sm text-gray-300">Time: {formatTime(usageTime)} / 1h</span>
+                        <div className="flex items-center gap-6">
+                            <div className="flex items-center gap-3 px-4 py-1.5 border border-primary/20 bg-primary/5 rounded-none font-mono">
+                                <Zap className="w-3.5 h-3.5 text-primary animate-pulse" />
+                                <span className="text-xs text-primary font-bold">{formatTime(usageTime)}</span>
                             </div>
 
                             {user ? (
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-4">
+                                    <div className="flex flex-col items-end hidden sm:flex">
+                                        <span className="text-[10px] text-white/40 font-mono">OPERATOR</span>
+                                        <span className="text-xs font-bold text-white uppercase">{user.displayName}</span>
+                                    </div>
                                     <img
                                         src={user.photoURL || ""}
                                         alt={user.displayName || ""}
-                                        className="w-9 h-9 rounded-full border-2 border-purple-500/50 shadow-lg"
+                                        className="w-10 h-10 rounded-none border border-primary/40 grayscale hover:grayscale-0 transition-all duration-500"
                                     />
-                                    <span className="text-sm text-white hidden md:block font-medium">{user.displayName}</span>
-                                    <Button
+                                    <button
                                         onClick={handleSignOut}
-                                        className="bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white btn-glow"
-                                        size="sm"
+                                        className="cyber-btn border-red-500/50 text-red-500/50 hover:text-red-500 hover:border-red-500 h-10 px-3"
                                     >
                                         <LogOut className="w-4 h-4" />
-                                    </Button>
+                                    </button>
                                 </div>
                             ) : (
-                                <Button
+                                <button
                                     onClick={handleSignIn}
-                                    className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold btn-glow"
+                                    className="cyber-btn h-11 px-8 text-xs"
                                 >
-                                    Sign In with Google
-                                </Button>
+                                    AUTHORIZE_ACCESS
+                                </button>
                             )}
                         </div>
                     </div>
@@ -565,19 +577,20 @@ function DockyCount() {
             <div className="container mx-auto px-4 py-8">
                 <div className="grid lg:grid-cols-12 gap-8">
                     <aside className="lg:col-span-3 space-y-4">
-                        <Card className="glass-strong border-purple-500/30 shadow-xl shadow-purple-500/10 card-hover">
-                            <CardHeader>
-                                <CardTitle className="text-lg gradient-text-pink flex items-center gap-2">
-                                    <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                                    Favorites
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-2">
+                        <div className="cyber-panel p-6 border-white/5">
+                            <div className="hud-corner hud-tl"></div>
+                            <div className="hud-corner hud-tr"></div>
+
+                            <h2 className="text-sm font-black tracking-[0.2em] mb-6 flex items-center gap-3 text-white/50">
+                                <Star className="w-4 h-4 text-primary animate-pulse" />
+                                SAVED_NODES
+                            </h2>
+
+                            <div className="space-y-3">
                                 {favorites.length === 0 ? (
-                                    <div className="text-center py-8">
-                                        <Star className="w-12 h-12 text-gray-600 mx-auto mb-3 opacity-50" />
-                                        <p className="text-sm text-gray-400">No favorites yet</p>
-                                        <p className="text-xs text-gray-500 mt-1">Sign in to save channels</p>
+                                    <div className="text-center py-10 opacity-20 group">
+                                        <HardDrive className="w-10 h-10 mx-auto mb-4 group-hover:text-primary transition-colors" />
+                                        <p className="text-[10px] uppercase font-bold tracking-widest">DRIVE_EMPTY</p>
                                     </div>
                                 ) : (
                                     favorites.map((fav) => (
@@ -585,440 +598,423 @@ function DockyCount() {
                                             key={fav.id}
                                             onClick={() => {
                                                 toast({
-                                                    title: "Génération du lien...",
-                                                    description: "Redirection vers le lien sécurisé...",
+                                                    title: "SEQUENCE_START",
+                                                    description: "Generating secure data link...",
                                                 })
                                                 const cutyUrl = shortenWithCuty(fav.id)
                                                 window.location.href = cutyUrl
                                             }}
-                                            className="w-full flex items-center gap-3 p-2.5 rounded-lg glass hover:glass-strong transition-all duration-300 text-left group hover:scale-105"
+                                            className="w-full flex items-center gap-4 p-3 border border-white/5 hover:border-primary/40 hover:bg-primary/5 transition-all duration-300 text-left group"
                                         >
-                                            <img
-                                                src={fav.avatar || "/placeholder.svg"}
-                                                alt={fav.name}
-                                                className="w-10 h-10 rounded-full border-2 border-purple-500/30 group-hover:border-purple-500/60 transition-all"
-                                            />
-                                            <span className="text-sm text-white truncate font-medium">{fav.name}</span>
+                                            <div className="relative">
+                                                <img
+                                                    src={fav.avatar || "/placeholder.svg"}
+                                                    alt={fav.name}
+                                                    className="w-10 h-10 rounded-none border border-white/10 group-hover:border-primary/50"
+                                                />
+                                                <div className="absolute top-0 right-0 w-2 h-2 bg-primary/20 group-hover:bg-primary"></div>
+                                            </div>
+                                            <div className="flex-1 overflow-hidden">
+                                                <div className="text-xs font-bold text-white/80 group-hover:text-primary truncate uppercase">{fav.name}</div>
+                                                <div className="text-[8px] font-mono text-white/30 uppercase mt-0.5">ID: {fav.id.slice(0, 8)}...</div>
+                                            </div>
                                         </button>
                                     ))
                                 )}
-                            </CardContent>
-                        </Card>
+                            </div>
+                        </div>
 
                     </aside>
 
                     <main className="lg:col-span-9 space-y-8">
-                        <Card className="glass-strong border-purple-500/30 shadow-xl shadow-purple-500/10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <CardContent className="pt-6">
-                                <div className="flex gap-3 mb-6">
-                                    <Button
-                                        onClick={() => setCompareMode(false)}
-                                        className={`flex-1 font-semibold transition-all duration-300 ${!compareMode
-                                            ? "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg shadow-blue-500/30 btn-glow"
-                                            : "bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 border border-gray-700"
-                                            }`}
-                                    >
-                                        <Video className="w-4 h-4 mr-2" />
-                                        Simple Mode
-                                    </Button>
-                                    <Button
-                                        onClick={() => setCompareMode(true)}
-                                        className={`flex-1 font-semibold transition-all duration-300 ${compareMode
-                                            ? "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg shadow-purple-500/30 btn-glow"
-                                            : "bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 border border-gray-700"
-                                            }`}
-                                    >
-                                        <TrendingUp className="w-4 h-4 mr-2" />
-                                        Compare Mode
-                                    </Button>
-                                </div>
+                        <div className="cyber-panel p-8 border-primary/20 bg-black/40">
+                            <div className="hud-corner hud-tl"></div>
+                            <div className="hud-corner hud-tr"></div>
+                            <div className="hud-corner hud-bl"></div>
+                            <div className="hud-corner hud-br"></div>
 
-                                {!compareMode ? (
+                            <div className="flex gap-4 mb-8">
+                                <button
+                                    onClick={() => setCompareMode(false)}
+                                    className={`flex-1 cyber-btn ${!compareMode ? 'bg-primary text-black' : ''}`}
+                                >
+                                    <Activity className="w-4 h-4 mr-2 inline" />
+                                    SINGLE_NODE
+                                </button>
+                                <button
+                                    onClick={() => setCompareMode(true)}
+                                    className={`flex-1 cyber-btn cyber-btn-secondary ${compareMode ? 'bg-secondary text-white' : ''}`}
+                                >
+                                    <BarChart3 className="w-4 h-4 mr-2 inline" />
+                                    SYNC_COMPARE
+                                </button>
+                            </div>
+
+                            {!compareMode ? (
+                                <div className="relative group">
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 pr-4 border-r border-white/10">
+                                        <Terminal className="w-4 h-4 text-primary" />
+                                    </div>
+                                    <input
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        placeholder="INPUT_QUERY_SEARCH: YOUTUBE_DATABASE"
+                                        className="w-full bg-black/40 border border-white/10 h-14 pl-16 pr-4 font-mono text-sm focus:border-primary/50 transition-all outline-none"
+                                    />
+                                </div>
+                            ) : (
+                                <div className="grid md:grid-cols-2 gap-4">
                                     <div className="relative group">
-                                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-blue-400 transition-colors" />
-                                        <Input
+                                        <Terminal className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary" />
+                                        <input
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
-                                            placeholder="Search for a YouTube channel..."
-                                            className="pl-12 h-14 bg-black/20 border-white/10 focus:border-primary/50 text-lg placeholder:text-muted-foreground/50 rounded-xl transition-all"
+                                            placeholder="NODE_PATH_1"
+                                            className="w-full bg-black/40 border border-white/10 h-12 pl-12 pr-4 font-mono text-xs focus:border-primary/50 transition-all outline-none"
                                         />
                                     </div>
-                                ) : (
-                                    <div className="grid md:grid-cols-2 gap-4">
-                                        <div className="relative group">
-                                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                                            <Input
-                                                value={searchQuery}
-                                                onChange={(e) => setSearchQuery(e.target.value)}
-                                                placeholder="First channel..."
-                                                className="pl-12 h-12 bg-black/20 border-white/10 focus:border-primary/50 placeholder:text-muted-foreground/50 rounded-xl"
-                                            />
-                                        </div>
-                                        <div className="relative group">
-                                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-purple-500 transition-colors" />
-                                            <Input
-                                                value={searchQuery2}
-                                                onChange={(e) => setSearchQuery2(e.target.value)}
-                                                placeholder="Second channel..."
-                                                className="pl-12 h-12 bg-black/20 border-white/10 focus:border-purple-500/50 placeholder:text-muted-foreground/50 rounded-xl"
-                                            />
-                                        </div>
+                                    <div className="relative group">
+                                        <Terminal className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary" />
+                                        <input
+                                            value={searchQuery2}
+                                            onChange={(e) => setSearchQuery2(e.target.value)}
+                                            placeholder="NODE_PATH_2"
+                                            className="w-full bg-black/40 border border-white/10 h-12 pl-12 pr-4 font-mono text-xs focus:border-secondary/50 transition-all outline-none"
+                                        />
                                     </div>
-                                )}
+                                </div>
+                            )}
 
-                                {(searchResults.length > 0 || (compareMode && searchResults2.length > 0)) && (
-                                    <div className="mt-4 grid gap-4 relative z-50">
-                                        {searchResults.length > 0 && (
-                                            <div className="bg-card border border-white/10 rounded-xl overflow-hidden shadow-2xl z-20">
-                                                {searchResults.map((result, index) => (
-                                                    <button
-                                                        key={index}
-                                                        onClick={() => selectChannel(result, false)}
-                                                        className="w-full flex items-center gap-4 p-4 hover:bg-primary/10 transition-colors text-left border-b border-white/5 last:border-0"
-                                                    >
-                                                        <img src={result[3] || "/placeholder.svg"} alt={result[0]} className="w-12 h-12 rounded-full ring-2 ring-white/10" />
-                                                        <div className="flex-1">
-                                                            <div className="font-bold text-foreground">{result[0]}</div>
-                                                            <div className="text-sm text-muted-foreground flex items-center gap-2">
-                                                                <span>{result[1]}</span>
-                                                                <span className="text-[10px] bg-white/5 px-1.5 py-0.5 rounded text-gray-500 font-mono">{result[2]}</span>
-                                                            </div>
+                            {(searchResults.length > 0 || (compareMode && searchResults2.length > 0)) && (
+                                <div className="mt-6 grid gap-4 relative z-50">
+                                    {searchResults.length > 0 && (
+                                        <div className="bg-black/90 border border-primary/40 p-1">
+                                            {searchResults.map((result, index) => (
+                                                <button
+                                                    key={index}
+                                                    onClick={() => selectChannel(result, false)}
+                                                    className="w-full flex items-center gap-4 p-4 hover:bg-primary/10 transition-colors text-left border-b border-white/5 last:border-0 group"
+                                                >
+                                                    <img src={result[3] || "/placeholder.svg"} alt={result[0]} className="w-12 h-12 grayscale group-hover:grayscale-0 border border-white/10 transition-all" />
+                                                    <div className="flex-1">
+                                                        <div className="font-black text-white uppercase group-hover:text-primary">{result[0]}</div>
+                                                        <div className="text-[10px] text-white/40 font-mono flex items-center gap-4">
+                                                            <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {result[1]}</span>
+                                                            <span className="text-primary/60">{result[2]}</span>
                                                         </div>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
 
-                                        {compareMode && searchResults2.length > 0 && (
-                                            <div className="bg-card border border-white/10 rounded-xl overflow-hidden shadow-2xl z-20">
-                                                {searchResults2.map((result, index) => (
-                                                    <button
-                                                        key={index}
-                                                        onClick={() => selectChannel(result, true)}
-                                                        className="w-full flex items-center gap-4 p-4 hover:bg-purple-500/10 transition-colors text-left border-b border-white/5 last:border-0"
-                                                    >
-                                                        <img src={result[3] || "/placeholder.svg"} alt={result[0]} className="w-12 h-12 rounded-full ring-2 ring-white/10" />
-                                                        <div className="flex-1">
-                                                            <div className="font-bold text-foreground">{result[0]}</div>
-                                                            <div className="text-sm text-muted-foreground flex items-center gap-2">
-                                                                <span>{result[1]}</span>
-                                                                <span className="text-[10px] bg-white/5 px-1.5 py-0.5 rounded text-gray-500 font-mono">{result[2]}</span>
-                                                            </div>
+                                    {compareMode && searchResults2.length > 0 && (
+                                        <div className="bg-black/90 border border-secondary/40 p-1">
+                                            {searchResults2.map((result, index) => (
+                                                <button
+                                                    key={index}
+                                                    onClick={() => selectChannel(result, true)}
+                                                    className="w-full flex items-center gap-4 p-4 hover:bg-secondary/10 transition-colors text-left border-b border-white/5 last:border-0 group"
+                                                >
+                                                    <img src={result[3] || "/placeholder.svg"} alt={result[0]} className="w-12 h-12 grayscale group-hover:grayscale-0 border border-white/10 transition-all" />
+                                                    <div className="flex-1">
+                                                        <div className="font-black text-white uppercase group-hover:text-secondary">{result[0]}</div>
+                                                        <div className="text-[10px] text-white/40 font-mono flex items-center gap-4">
+                                                            <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {result[1]}</span>
+                                                            <span className="text-secondary/60">{result[2]}</span>
                                                         </div>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
 
 
                         <div className={`grid ${compareMode && compareChannel ? "md:grid-cols-2" : "grid-cols-1"} gap-6`}>
                             {selectedChannel && (
                                 <div className="relative">
                                     {!hasSupported && (
-                                        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center p-6 bg-black/80 backdrop-blur-xl rounded-2xl border-2 border-dashed border-purple-500/40 animate-in fade-in duration-500">
-                                            <div className="w-16 h-16 bg-purple-500/20 rounded-full flex items-center justify-center mb-6 ring-4 ring-purple-500/40 animate-pulse">
-                                                <X className="w-8 h-8 text-purple-400" />
+                                        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center p-6 bg-black/80 backdrop-blur-xl border border-primary/20 animate-in fade-in duration-500">
+                                            <div className="hud-corner hud-tl border-primary"></div>
+                                            <div className="hud-corner hud-tr border-primary"></div>
+                                            <div className="hud-corner hud-bl border-primary"></div>
+                                            <div className="hud-corner hud-br border-primary"></div>
+
+                                            <div className="w-24 h-24 border border-primary/40 rounded-none flex items-center justify-center mb-8 relative bg-primary/5">
+                                                <Lock className="w-10 h-10 text-primary animate-pulse" />
                                             </div>
-                                            <h3 className="text-2xl font-bold text-white mb-3 text-center">Accès Bloqué</h3>
-                                            <p className="text-gray-400 text-center mb-8 max-w-sm">
-                                                Pour voir les statistiques de <span className="text-purple-400 font-bold">{selectedChannel.name}</span>, vous devez passer par le lien sécurisé obligatoire.
+                                            <h3 className="text-3xl font-black neon-text mb-4 text-center tracking-tighter">ENCRYPTED_DATA_LINK</h3>
+                                            <p className="text-white/40 text-center mb-10 max-w-sm text-xs leading-relaxed font-mono uppercase">
+                                                To de-scramble real-time metrics for <span className="text-white font-bold">{selectedChannel.name}</span>, authorization sequence required.
                                             </p>
-                                            <Button
+                                            <button
                                                 onClick={() => {
                                                     const cutyUrl = shortenWithCuty(selectedChannel.id)
                                                     window.location.href = cutyUrl
                                                 }}
-                                                className="w-full max-w-xs h-14 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 text-white font-bold text-lg rounded-xl shadow-lg shadow-purple-500/30 btn-glow transition-all active:scale-95"
+                                                className="w-full max-w-xs cyber-btn text-sm font-black"
                                             >
-                                                Débloquer les Statistiques
-                                            </Button>
-                                            <p className="text-gray-500 text-[10px] mt-6 italic">Le soutien finance l'hébergement 24/7</p>
+                                                INITIALIZE_HANDSHAKE
+                                            </button>
+                                            <p className="text-primary/40 text-[8px] mt-8 uppercase tracking-[0.5em] font-medium">NEURAL_DECRYPTION_IN_PROGRESS</p>
                                         </div>
                                     )}
 
-                                    <Card className={`glass-strong border-purple-500/30 shadow-2xl shadow-purple-500/20 overflow-hidden relative group card-hover animate-in fade-in slide-in-from-left-4 duration-500 ${!hasSupported ? 'opacity-20 pointer-events-none grayscale blur-sm' : ''}`}>
-                                        <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 animate-pulse" />
+                                    <div className={`cyber-panel p-8 animate-in fade-in slide-in-from-left-4 duration-700 ${!hasSupported ? 'opacity-20 pointer-events-none grayscale blur-xl' : ''}`}>
+                                        <div className="hud-corner hud-tl"></div>
+                                        <div className="hud-corner hud-tr"></div>
 
-                                        <CardHeader>
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="relative">
-                                                        <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full blur-md opacity-50 group-hover:opacity-75 transition-opacity"></div>
-                                                        <img
-                                                            src={selectedChannel.avatar || "/placeholder.svg"}
-                                                            alt={selectedChannel.name}
-                                                            className="relative w-16 h-16 rounded-full border-4 border-purple-500/30 shadow-xl"
-                                                        />
-                                                        <div className="absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-lg shadow-red-500/50 animate-pulse">
-                                                            LIVE
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        <CardTitle className="text-xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                                                            {selectedChannel.name}
-                                                        </CardTitle>
-                                                        <p className="text-xs text-gray-400 mt-1">Updating every 2 seconds</p>
+                                        <div className="flex items-center justify-between mb-8">
+                                            <div className="flex items-center gap-6">
+                                                <div className="relative group">
+                                                    <img
+                                                        src={selectedChannel.avatar || "/placeholder.svg"}
+                                                        alt={selectedChannel.name}
+                                                        className="relative w-24 h-24 rounded-none border border-primary/40 shadow-2xl grayscale group-hover:grayscale-0 transition-all duration-500"
+                                                    />
+                                                    <div className="absolute -bottom-2 right-0 px-2 py-0.5 text-[8px] font-black bg-primary text-black tracking-widest animate-pulse">
+                                                        LIVE_STREAM
                                                     </div>
                                                 </div>
-                                                <div className="flex gap-2">
-                                                    <Button
-                                                        onClick={() => toggleFavorite(selectedChannel)}
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="hover:bg-purple-500/20 transition-all duration-300 hover:scale-110"
-                                                    >
-                                                        <Star
-                                                            className={`w-5 h-5 transition-all duration-300 ${favorites.some((f) => f.id === selectedChannel.id)
-                                                                ? "fill-yellow-400 text-yellow-400 drop-shadow-lg drop-shadow-yellow-400/50"
-                                                                : "text-gray-400 hover:text-yellow-400"
-                                                                }`}
-                                                        />
-                                                    </Button>
-                                                    <Button
-                                                        onClick={() => {
-                                                            setSelectedChannel(null)
-                                                            if (intervalRef.current) clearInterval(intervalRef.current)
-                                                            window.history.pushState({ path: "/" }, "", "/")
-                                                        }}
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="hover:bg-red-500/20 transition-all duration-300 hover:scale-110"
-                                                    >
-                                                        <X className="w-5 h-5 text-gray-400 hover:text-red-400" />
-                                                    </Button>
+                                                <div>
+                                                    <div className="text-[10px] text-primary font-mono uppercase tracking-[0.3em] mb-1">Target_Loaded</div>
+                                                    <h2 className="text-3xl font-black text-white uppercase tracking-tighter">
+                                                        {selectedChannel.name}
+                                                    </h2>
+                                                    <div className="flex items-center gap-3 mt-2">
+                                                        <Activity className="w-3.5 h-3.5 text-primary" />
+                                                        <span className="text-[10px] text-white/30 font-mono">HZ: 0.5 (2s POLLING)</span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </CardHeader>
+                                            <div className="flex gap-4">
+                                                <button
+                                                    onClick={() => toggleFavorite(selectedChannel)}
+                                                    className="p-3 border border-white/10 hover:border-primary transition-all group"
+                                                >
+                                                    <Star
+                                                        className={`w-5 h-5 transition-all ${favorites.some((f) => f.id === selectedChannel.id)
+                                                            ? "fill-primary text-primary"
+                                                            : "text-white/20 group-hover:text-primary"
+                                                            }`}
+                                                    />
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedChannel(null)
+                                                        if (intervalRef.current) clearInterval(intervalRef.current)
+                                                        window.history.pushState({ path: "/" }, "", "/")
+                                                    }}
+                                                    className="p-3 border border-white/10 hover:border-red-500 transition-all group"
+                                                >
+                                                    <X className="w-5 h-5 text-white/20 group-hover:text-red-500" />
+                                                </button>
+                                            </div>
+                                        </div>
 
-                                        <CardContent className="space-y-4">
-                                            <div className="relative glass-strong rounded-xl p-5 stat-glow-red overflow-hidden transition-all duration-300">
-                                                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-red-500/20 to-transparent rounded-full blur-2xl"></div>
-                                                <div className="relative z-10">
-                                                    <div className="flex items-center gap-2 text-sm text-gray-300 mb-3">
-                                                        <Users className="w-5 h-5 text-red-400" />
-                                                        <span className="font-semibold">Subscribers</span>
+                                        <div className="space-y-6">
+                                            <div className="cyber-panel p-10 bg-black/60 border-primary/30 text-center">
+                                                <div className="absolute top-2 left-4 text-[8px] text-primary/40 font-mono">PRIMARY_METRIC_SUBS</div>
+                                                <div
+                                                    id="main-subscribers"
+                                                    className="text-8xl md:text-9xl font-black tracking-tighter neon-text"
+                                                >
+                                                    0
+                                                </div>
+                                                <div className="mt-4 flex justify-center gap-8">
+                                                    <div className="flex items-center gap-2 text-white/20 text-[10px] font-mono">
+                                                        <Shield className="w-3 h-3" /> VERIFIED_DATA
                                                     </div>
+                                                    <div className="flex items-center gap-2 text-white/20 text-[10px] font-mono">
+                                                        <Cpu className="w-3 h-3" /> NEURAL_PROCESS
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-6">
+                                                <div className="cyber-stat">
+                                                    <div className="text-[8px] text-white/30 uppercase tracking-widest mb-1">TOTAL_VIEWS</div>
                                                     <div
-                                                        id="main-subscribers"
-                                                        className="text-5xl font-[family-name:var(--font-roboto-black)] text-red-400 drop-shadow-lg drop-shadow-red-500/50"
+                                                        id="main-views"
+                                                        className="text-3xl font-black text-white"
+                                                    >
+                                                        0
+                                                    </div>
+                                                </div>
+
+                                                <div className="cyber-stat-alt">
+                                                    <div className="text-[8px] text-white/30 uppercase tracking-widest mb-1">DATA_NODES_VIDS</div>
+                                                    <div
+                                                        id="main-videos"
+                                                        className="text-3xl font-black text-white"
                                                     >
                                                         0
                                                     </div>
                                                 </div>
                                             </div>
-
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="relative glass-strong rounded-xl p-4 stat-glow-blue overflow-hidden transition-all duration-300">
-                                                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-500/20 to-transparent rounded-full blur-2xl"></div>
-                                                    <div className="relative z-10">
-                                                        <div className="flex items-center gap-2 text-sm text-gray-300 mb-2">
-                                                            <Eye className="w-4 h-4 text-blue-400" />
-                                                            <span className="font-medium">Views</span>
-                                                        </div>
-                                                        <div
-                                                            id="main-views"
-                                                            className="text-2xl font-[family-name:var(--font-roboto-black)] text-blue-400 drop-shadow-md drop-shadow-blue-500/50"
-                                                        >
-                                                            0
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="relative glass-strong rounded-xl p-4 stat-glow-green overflow-hidden transition-all duration-300">
-                                                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-green-500/20 to-transparent rounded-full blur-2xl"></div>
-                                                    <div className="relative z-10">
-                                                        <div className="flex items-center gap-2 text-sm text-gray-300 mb-2">
-                                                            <Video className="w-4 h-4 text-green-400" />
-                                                            <span className="font-medium">Videos</span>
-                                                        </div>
-                                                        <div
-                                                            id="main-videos"
-                                                            className="text-2xl font-[family-name:var(--font-roboto-black)] text-green-400 drop-shadow-md drop-shadow-green-500/50"
-                                                        >
-                                                            0
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
 
                             {compareMode && compareChannel && (
-                                <Card className="bg-card/50 backdrop-blur-md border-white/5 shadow-xl overflow-hidden relative">
-                                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-600 to-pink-600" />
-                                    <CardHeader>
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-4">
-                                                <div className="relative">
-                                                    <img
-                                                        src={compareChannel.avatar || "/placeholder.svg"}
-                                                        alt={compareChannel.name}
-                                                        className="w-16 h-16 rounded-full ring-4 ring-black/50 shadow-xl"
-                                                    />
-                                                    <div className="absolute -bottom-1 -right-1 bg-red-600 text-[10px] font-bold px-1.5 py-0.5 rounded text-white">LIVE</div>
-                                                </div>
-                                                <div>
-                                                    <CardTitle className="text-2xl font-bold">{compareChannel.name}</CardTitle>
-                                                    <div className="text-sm text-muted-foreground">YouTube Channel</div>
+                                <div className="cyber-panel p-8 animate-in fade-in slide-in-from-right-4 duration-700">
+                                    <div className="hud-corner hud-tl border-secondary"></div>
+                                    <div className="hud-corner hud-tr border-secondary"></div>
+
+                                    <div className="flex items-center justify-between mb-8">
+                                        <div className="flex items-center gap-6">
+                                            <div className="relative group">
+                                                <img
+                                                    src={compareChannel.avatar || "/placeholder.svg"}
+                                                    alt={compareChannel.name}
+                                                    className="w-24 h-24 rounded-none border border-secondary/40 shadow-2xl grayscale group-hover:grayscale-0 transition-all duration-500"
+                                                />
+                                                <div className="absolute -bottom-2 right-0 px-2 py-0.5 text-[8px] font-black bg-secondary text-white tracking-widest animate-pulse">
+                                                    LIVE_STREAM
                                                 </div>
                                             </div>
-                                            <Button
-                                                onClick={() => {
-                                                    setCompareChannel(null)
-                                                    if (compareIntervalRef.current) clearInterval(compareIntervalRef.current)
-                                                }}
-                                                variant="ghost"
-                                                size="icon"
-                                                className="hover:bg-white/10 hover:text-destructive"
-                                            >
-                                                <X className="w-6 h-6" />
-                                            </Button>
+                                            <div>
+                                                <div className="text-[10px] text-secondary font-mono uppercase tracking-[0.3em] mb-1">Mirror_Loaded</div>
+                                                <h2 className="text-3xl font-black text-white uppercase tracking-tighter">{compareChannel.name}</h2>
+                                                <div className="text-[8px] uppercase tracking-widest text-white/30 font-mono mt-2">Comparison_Node</div>
+                                            </div>
                                         </div>
-                                    </CardHeader>
-                                    <CardContent className="space-y-6">
-                                        <div className="bg-black/20 rounded-2xl p-6 border border-white/5 text-center relative overflow-hidden">
-                                            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-50" />
-                                            <div className="relative z-10">
-                                                <div className="flex items-center justify-center gap-2 text-sm font-medium text-purple-400 mb-2 uppercase tracking-wider">
-                                                    <Users className="w-4 h-4" />
-                                                    <span>Subscribers</span>
-                                                </div>
-                                                <div
-                                                    id="compare-subscribers"
-                                                    className="text-6xl md:text-7xl font-[family-name:var(--font-roboto-black)] text-white tracking-tight"
-                                                >
-                                                    0
-                                                </div>
+                                        <button
+                                            onClick={() => {
+                                                setCompareChannel(null)
+                                                if (compareIntervalRef.current) clearInterval(compareIntervalRef.current)
+                                            }}
+                                            className="p-3 border border-white/10 hover:border-red-500 transition-all group"
+                                        >
+                                            <X className="w-5 h-5 text-white/20 group-hover:text-red-500" />
+                                        </button>
+                                    </div>
+
+                                    <div className="space-y-6">
+                                        <div className="cyber-panel p-10 bg-black/60 border-secondary/30 text-center">
+                                            <div className="absolute top-2 left-4 text-[8px] text-secondary/40 font-mono">PRIMARY_METRIC_SUBS</div>
+                                            <div
+                                                id="compare-subscribers"
+                                                className="text-8xl md:text-9xl font-black tracking-tighter neon-text-purple"
+                                            >
+                                                0
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="bg-black/20 rounded-xl p-4 border border-white/5">
-                                                <div className="flex items-center gap-2 text-xs font-medium text-blue-400 mb-2 uppercase">
-                                                    <Eye className="w-3 h-3" />
-                                                    <span>Total Views</span>
-                                                </div>
+                                        <div className="grid grid-cols-2 gap-6">
+                                            <div className="cyber-stat-alt">
+                                                <div className="text-[8px] text-white/30 uppercase tracking-widest mb-1">TOTAL_VIEWS</div>
                                                 <div
                                                     id="compare-views"
-                                                    className="text-xl md:text-2xl font-[family-name:var(--font-roboto-black)] text-white/90"
+                                                    className="text-3xl font-black text-white"
                                                 >
                                                     0
                                                 </div>
                                             </div>
 
-                                            <div className="bg-black/20 rounded-xl p-4 border border-white/5">
-                                                <div className="flex items-center gap-2 text-xs font-medium text-green-400 mb-2 uppercase">
-                                                    <Video className="w-3 h-3" />
-                                                    <span>Videos</span>
-                                                </div>
+                                            <div className="cyber-stat">
+                                                <div className="text-[8px] text-white/30 uppercase tracking-widest mb-1">DATA_NODES_VIDS</div>
                                                 <div
                                                     id="compare-videos"
-                                                    className="text-xl md:text-2xl font-[family-name:var(--font-roboto-black)] text-white/90"
+                                                    className="text-3xl font-black text-white"
                                                 >
                                                     0
                                                 </div>
                                             </div>
                                         </div>
-                                    </CardContent>
-                                </Card>
+                                    </div>
+                                </div>
                             )}
                         </div>
 
                         {compareMode && selectedChannel && compareChannel && (
-                            <Card className="bg-card/50 backdrop-blur-md border-white/5 shadow-xl">
-                                <CardHeader>
-                                    <CardTitle className="text-xl">Comparison Analysis</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="grid md:grid-cols-3 gap-6">
-                                        <div className="bg-black/20 rounded-xl p-6 border border-white/5 flex flex-col items-center text-center">
-                                            <div className="text-sm text-muted-foreground mb-3">Subscriber Difference</div>
-                                            <div className="flex items-center gap-3">
-                                                {selectedChannel.subscribers > compareChannel.subscribers ? (
-                                                    <TrendingUp className="w-6 h-6 text-green-400" />
-                                                ) : (
-                                                    <TrendingDown className="w-6 h-6 text-red-400" />
-                                                )}
-                                                <span className="text-3xl font-bold font-[family-name:var(--font-roboto-black)]">
-                                                    {Math.abs(selectedChannel.subscribers - compareChannel.subscribers).toLocaleString()}
-                                                </span>
-                                            </div>
-                                            <div className="text-xs text-muted-foreground mt-2">
-                                                {selectedChannel.subscribers > compareChannel.subscribers
-                                                    ? `${selectedChannel.name} leads`
-                                                    : `${compareChannel.name} leads`}
-                                            </div>
+                            <div className="cyber-panel p-8 animate-in fade-in zoom-in duration-700 bg-black/40 border-white/10">
+                                <h3 className="text-sm font-black tracking-[0.3em] mb-8 text-white/40 uppercase">DATA_COHERENCE_ANALYSIS</h3>
+                                <div className="grid md:grid-cols-3 gap-6">
+                                    <div className="p-6 border border-white/5 bg-black/40 text-center relative overflow-hidden group">
+                                        <div className="text-[8px] text-white/30 mb-4 uppercase font-mono">SUB_DIFFERENTIAL</div>
+                                        <div className="flex items-center justify-center gap-4">
+                                            {selectedChannel.subscribers > compareChannel.subscribers ? (
+                                                <TrendingUp className="w-6 h-6 text-primary group-hover:animate-bounce" />
+                                            ) : (
+                                                <TrendingDown className="w-6 h-6 text-red-500" />
+                                            )}
+                                            <span className="text-4xl font-black neon-text">
+                                                {Math.abs(selectedChannel.subscribers - compareChannel.subscribers).toLocaleString()}
+                                            </span>
                                         </div>
-
-                                        <div className="bg-black/20 rounded-xl p-6 border border-white/5 flex flex-col items-center text-center">
-                                            <div className="text-sm text-muted-foreground mb-3">View Difference</div>
-                                            <div className="flex items-center gap-3">
-                                                {selectedChannel.views > compareChannel.views ? (
-                                                    <TrendingUp className="w-6 h-6 text-green-400" />
-                                                ) : (
-                                                    <TrendingDown className="w-6 h-6 text-red-400" />
-                                                )}
-                                                <span className="text-2xl font-bold font-[family-name:var(--font-roboto-black)]">
-                                                    {Math.abs(selectedChannel.views - compareChannel.views).toLocaleString()}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        <div className="bg-black/20 rounded-xl p-6 border border-white/5 flex flex-col items-center text-center">
-                                            <div className="text-sm text-muted-foreground mb-3">Video Difference</div>
-                                            <div className="flex items-center gap-3">
-                                                {selectedChannel.videos > compareChannel.videos ? (
-                                                    <TrendingUp className="w-6 h-6 text-green-400" />
-                                                ) : (
-                                                    <TrendingDown className="w-6 h-6 text-red-400" />
-                                                )}
-                                                <span className="text-2xl font-bold font-[family-name:var(--font-roboto-black)]">
-                                                    {Math.abs(selectedChannel.videos - compareChannel.videos).toLocaleString()}
-                                                </span>
-                                            </div>
+                                        <div className="text-[8px] text-primary/60 mt-4 uppercase font-bold tracking-widest">
+                                            {selectedChannel.subscribers > compareChannel.subscribers
+                                                ? `>> ${selectedChannel.name} DOMINANCE`
+                                                : `>> ${compareChannel.name} DOMINANCE`}
                                         </div>
                                     </div>
-                                </CardContent>
-                            </Card>
+
+                                    <div className="p-6 border border-white/5 bg-black/40 text-center relative overflow-hidden group">
+                                        <div className="text-[8px] text-white/30 mb-4 uppercase font-mono">VIEW_DIFFERENTIAL</div>
+                                        <div className="flex items-center justify-center gap-4">
+                                            {selectedChannel.views > compareChannel.views ? (
+                                                <TrendingUp className="w-6 h-6 text-primary" />
+                                            ) : (
+                                                <TrendingDown className="w-6 h-6 text-red-500" />
+                                            )}
+                                            <span className="text-3xl font-black text-white">
+                                                {Math.abs(selectedChannel.views - compareChannel.views).toLocaleString()}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-6 border border-white/5 bg-black/40 text-center relative overflow-hidden group">
+                                        <div className="text-[8px] text-white/30 mb-4 uppercase font-mono">VIDEO_DIFFERENTIAL</div>
+                                        <div className="flex items-center justify-center gap-4">
+                                            {selectedChannel.videos > compareChannel.videos ? (
+                                                <TrendingUp className="w-6 h-6 text-primary" />
+                                            ) : (
+                                                <TrendingDown className="w-6 h-6 text-red-500" />
+                                            )}
+                                            <span className="text-3xl font-black text-white">
+                                                {Math.abs(selectedChannel.videos - compareChannel.videos).toLocaleString()}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         )}
 
-                        <div className="mt-12 space-y-8">
-                            <section className="prose prose-invert max-w-none">
-                                <h2 className="text-2xl font-bold text-white mb-4">Real-Time YouTube Subscriber Count</h2>
-                                <p className="text-gray-400 leading-relaxed">
-                                    DockyCount provides the most accurate and up-to-date real-time subscriber count for YouTube channels.
-                                    Unlike the abbreviated counts shown on YouTube, our tool connects directly to the API to show you the
-                                    live numbers as they happen. Whether you're a creator tracking your milestones or a fan watching a
-                                    subscriber battle, DockyCount is the ultimate tool for YouTube analytics.
-                                </p>
-                            </section>
+                        <div className="mt-20 space-y-12 max-w-4xl opacity-60">
+                            <div className="flex items-center gap-6 mb-8 group">
+                                <Activity className="w-10 h-10 text-primary animate-pulse" />
+                                <h2 className="text-4xl font-black tracking-tighter uppercase whitespace-nowrap">Neural_Analytics // v2.6.0</h2>
+                                <div className="h-px w-full bg-white/10"></div>
+                            </div>
 
-                            <div className="grid md:grid-cols-2 gap-8">
-                                <section className="prose prose-invert max-w-none">
-                                    <h3 className="text-xl font-bold text-white mb-3">Why Use DockyCount?</h3>
-                                    <ul className="text-gray-400 space-y-2 list-disc pl-5">
-                                        <li>Instant updates every 2 seconds</li>
-                                        <li>Compare two channels side-by-side</li>
-                                        <li>Track views and video counts</li>
-                                        <li>Save your favorite channels</li>
-                                        <li>Beautiful, distraction-free dark mode interface</li>
-                                    </ul>
-                                </section>
-
-                                <section className="prose prose-invert max-w-none">
-                                    <h3 className="text-xl font-bold text-white mb-3">How It Works</h3>
-                                    <p className="text-gray-400 leading-relaxed">
-                                        Simply enter the name or URL of any YouTube channel in the search bar above. Our system instantly
-                                        fetches the channel's data and establishes a live connection to track changes. You can watch the
-                                        numbers roll in real-time with our smooth odometer animation.
+                            <div className="grid md:grid-cols-2 gap-12 font-mono text-sm leading-relaxed text-white/60">
+                                <div className="space-y-6">
+                                    <div className="p-4 border-l-2 border-primary bg-primary/5">
+                                        <p>
+                                            <span className="text-primary font-bold mr-2">PROTOCOL_V3:</span>
+                                            DockyCount facilitates real-time data stream extraction from Google Neural Networks.
+                                            Our algorithms bypass standard caching to deliver sub-second precision on subscriber metrics.
+                                        </p>
+                                    </div>
+                                    <p>
+                                        Whether monitoring milestones or clinical data syncs, our interface provides the terminal
+                                        access necessary for advanced digital monitoring.
                                     </p>
-                                </section>
+                                </div>
+                                <div className="space-y-4">
+                                    <div className="text-[10px] text-primary font-black tracking-widest uppercase mb-4">Core_Functions</div>
+                                    <ul className="space-y-2 list-none">
+                                        <li className="flex items-center gap-3"><Zap className="w-3 h-3" /> HZ: 0.5 REAL-TIME CLOCK</li>
+                                        <li className="flex items-center gap-3"><Zap className="w-3 h-3" /> MULTI-NODE SYNC COMPARISON</li>
+                                        <li className="flex items-center gap-3"><Zap className="w-3 h-3" /> NEURAL_ID ENCRYPTION</li>
+                                        <li className="flex items-center gap-3"><Zap className="w-3 h-3" /> CLOUD_STORAGE_SYNC (FAVORITES)</li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
 

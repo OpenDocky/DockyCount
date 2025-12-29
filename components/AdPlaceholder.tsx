@@ -25,10 +25,10 @@ export function AdPlaceholder({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'linear-gradient(135deg, rgba(147, 51, 234, 0.1), rgba(59, 130, 246, 0.1), rgba(236, 72, 153, 0.1))',
-        border: '1px solid rgba(147, 51, 234, 0.3)',
-        borderRadius: '12px',
-        backdropFilter: 'blur(8px)',
+        background: 'rgba(0, 243, 255, 0.05)',
+        border: '1px solid rgba(0, 243, 255, 0.2)',
+        borderRadius: '0px',
+        backdropFilter: 'blur(12px)',
         padding: '10px',
     }
 
@@ -57,7 +57,9 @@ export function AdPlaceholder({
 
     return (
         <div className={className} style={containerStyle}>
-            {/* Ad container using iframe isolation */}
+            <div className="hud-corner hud-tl" style={{ border: '1px solid rgba(0, 243, 255, 0.5)', borderRight: 'none', borderBottom: 'none' }}></div>
+            <div className="hud-corner hud-br" style={{ border: '1px solid rgba(0, 243, 255, 0.5)', borderLeft: 'none', borderTop: 'none' }}></div>
+
             <iframe
                 title={`ad-${adKey}`}
                 srcDoc={adHtml}
@@ -72,34 +74,6 @@ export function AdPlaceholder({
                     overflow: 'hidden',
                     display: 'block',
                     background: 'transparent'
-                }}
-            />
-
-            {/* Corner accent - top right */}
-            <div
-                style={{
-                    position: 'absolute',
-                    top: 0,
-                    right: 0,
-                    width: '64px',
-                    height: '64px',
-                    background: 'linear-gradient(135deg, rgba(147, 51, 234, 0.15), transparent)',
-                    borderBottomLeftRadius: '24px',
-                    pointerEvents: 'none',
-                }}
-            />
-
-            {/* Corner accent - bottom left */}
-            <div
-                style={{
-                    position: 'absolute',
-                    bottom: 0,
-                    left: 0,
-                    width: '64px',
-                    height: '64px',
-                    background: 'linear-gradient(315deg, rgba(59, 130, 246, 0.15), transparent)',
-                    borderTopRightRadius: '24px',
-                    pointerEvents: 'none',
                 }}
             />
         </div>
