@@ -1,53 +1,65 @@
 import Link from "next/link"
-import { Activity } from "lucide-react"
+import { Activity, Github, Twitter, Globe } from "lucide-react"
 
 export function Footer() {
   return (
-    <footer className="relative border-t border-primary/10 bg-black/60 backdrop-blur-md mt-auto overflow-hidden py-12">
-      <div className="container mx-auto px-4 relative z-10">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-10">
+    <footer className="border-t border-border bg-background py-16 mt-20">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
 
-          <div className="flex flex-col items-center md:items-start gap-4">
-            <div className="flex items-center gap-4">
-              <div className="px-2 py-0.5 border border-primary text-[10px] text-primary font-black tracking-widest uppercase">
-                NODE_FOOTER
-              </div>
-              <span className="font-black text-white tracking-widest uppercase text-xl neon-text">SYS_STATS</span>
+          <div className="col-span-1 md:col-span-2 space-y-6">
+            <div className="flex flex-col">
+              <span className="text-2xl font-black tracking-tighter gradient-text">DockyCount</span>
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">
+                v19.0.0 "Aura" Edition
+              </span>
             </div>
-            <p className="text-[10px] font-mono text-white/30 tracking-widest uppercase">
-              // NEURAL_LINK_SECURE_CHANNEL // © {new Date().getFullYear()}
+            <p className="text-sm text-muted-foreground leading-relaxed max-w-sm">
+              Providing precision analytics for the modern YouTube ecosystem.
+              Our platform delivers real-time data with higher fidelity than traditional dashboards.
             </p>
+            <div className="flex gap-4">
+              <a href="#" className="p-2 border border-border rounded-xl hover:bg-muted transition-colors">
+                <Github className="w-4 h-4 text-muted-foreground" />
+              </a>
+              <a href="#" className="p-2 border border-border rounded-xl hover:bg-muted transition-colors">
+                <Twitter className="w-4 h-4 text-muted-foreground" />
+              </a>
+              <a href="#" className="p-2 border border-border rounded-xl hover:bg-muted transition-colors">
+                <Globe className="w-4 h-4 text-muted-foreground" />
+              </a>
+            </div>
           </div>
 
-          <nav className="flex flex-wrap justify-center gap-8 text-[10px] font-black tracking-[0.2em] uppercase">
-            <Link
-              href="/privacy"
-              className="text-white/40 hover:text-primary transition-all duration-300 relative group"
-            >
-              PRIVACY_PROTOCOLS
-            </Link>
-            <Link
-              href="/terms"
-              className="text-white/40 hover:text-primary transition-all duration-300 relative group"
-            >
-              USAGE_POLICY
-            </Link>
-            <Link
-              href="/contact"
-              className="text-white/40 hover:text-primary transition-all duration-300 relative group"
-            >
-              DIRECT_LINK_ADMIN
-            </Link>
-          </nav>
+          <div className="space-y-6">
+            <h4 className="text-xs font-black uppercase tracking-widest text-foreground">Platform</h4>
+            <nav className="flex flex-col gap-4">
+              <Link href="/about" className="text-sm text-muted-foreground hover:text-primary transition-colors">About Us</Link>
+              <a href="/live-search" className="text-sm text-muted-foreground hover:text-primary transition-colors">Live Search</a>
+              <a href="/api-access" className="text-sm text-muted-foreground hover:text-primary transition-colors">API Access</a>
+              <a href="/compare" className="text-sm text-muted-foreground hover:text-primary transition-colors">Comparison Tool</a>
+            </nav>
+          </div>
+
+          <div className="space-y-6">
+            <h4 className="text-xs font-black uppercase tracking-widest text-foreground">Legal & Privacy</h4>
+            <nav className="flex flex-col gap-4">
+              <Link href="/privacy" className="text-sm text-muted-foreground hover:text-primary transition-colors">Privacy Policy</Link>
+              <Link href="/terms" className="text-sm text-muted-foreground hover:text-primary transition-colors">Terms of Service</Link>
+              <Link href="/contact" className="text-sm text-muted-foreground hover:text-primary transition-colors">Contact Support</Link>
+            </nav>
+          </div>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-3 text-[10px] text-white/20 font-mono">
-            <Activity className="w-3 h-3 text-primary animate-pulse" />
-            UPLINK_STABLE // MIXERNO_CORE_SYNC
-          </div>
-          <div className="text-[9px] text-white/10 uppercase tracking-widest font-bold">
-            Data streams are subject to neural decryption delays
+        <div className="mt-16 pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center gap-6">
+          <p className="text-xs text-muted-foreground font-medium">
+            © {new Date().getFullYear()} DockyCount. All rights reserved.
+          </p>
+          <div className="flex items-center gap-3 px-4 py-2 bg-secondary rounded-full">
+            <Activity className="w-3.5 h-3.5 text-primary" />
+            <span className="text-[10px] font-bold text-foreground uppercase tracking-widest">
+              Uplink Active: Stable
+            </span>
           </div>
         </div>
       </div>

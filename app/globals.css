@@ -1,26 +1,48 @@
 @import "tailwindcss";
-
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Neo-Glass Design System */
-  --background: #000000;
-  --foreground: #ffffff;
+  /* Aura Design System v19.0.0 - Minimalist & Elegant */
+  --background: #ffffff;
+  --foreground: #0f172a;
 
-  --primary: #a855f7;
-  /* Purple */
-  --secondary: #06b6d4;
-  /* Teal */
+  --primary: #6366f1;
+  /* Indigo */
+  --primary-foreground: #ffffff;
 
-  --glass-bg: rgba(255, 255, 255, 0.03);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-border-hover: rgba(255, 255, 255, 0.15);
+  --secondary: #f8fafc;
+  --secondary-foreground: #0f172a;
+
+  --accent: #f43f5e;
+
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+
+  --border: #e2e8f0;
+  --input: #e2e8f0;
 
   --radius: 1rem;
   --font-sans: "Inter", system-ui, sans-serif;
   --font-display: "Outfit", sans-serif;
+}
+
+.dark {
+  --background: #020617;
+  --foreground: #f8fafc;
+
+  --primary: #818cf8;
+  --primary-foreground: #ffffff;
+
+  --secondary: #1e293b;
+  --secondary-foreground: #f8fafc;
+
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+
+  --border: #1e293b;
+  --input: #1e293b;
 }
 
 @theme inline {
@@ -30,150 +52,90 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
 
   --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 0.5rem);
+  --radius-2xl: calc(var(--radius) + 1rem);
 }
 
 @layer base {
   body {
-    @apply bg-black text-white antialiased selection:bg-primary/30 selection:text-white font-sans;
-    background-color: #000000;
-    position: relative;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    background-image:
-      linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-    background-size: 40px 40px;
-    mask-image: radial-gradient(circle at center, black, transparent 80%);
-  }
-
-  /* Orbs based on image */
-  .bg-orbs {
-    position: fixed;
-    inset: 0;
-    z-index: -2;
-    overflow: hidden;
-    pointer-events: none;
-  }
-
-  .orb-1 {
-    position: absolute;
-    top: -10%;
-    left: -10%;
-    width: 60vw;
-    height: 60vw;
-    background: radial-gradient(circle at center, rgba(168, 85, 247, 0.15), transparent 70%);
-    filter: blur(80px);
-    animation: pulse 15s ease-in-out infinite alternate;
-  }
-
-  .orb-2 {
-    position: absolute;
-    bottom: -10%;
-    right: -10%;
-    width: 60vw;
-    height: 60vw;
-    background: radial-gradient(circle at center, rgba(6, 182, 212, 0.15), transparent 70%);
-    filter: blur(80px);
-    animation: pulse 12s ease-in-out infinite alternate-reverse;
-  }
-
-  @keyframes pulse {
-    0% {
-      transform: scale(1) translate(0, 0);
-    }
-
-    100% {
-      transform: scale(1.1) translate(20px, 20px);
-    }
+    @apply bg-background text-foreground antialiased selection:bg-primary/20 font-sans;
+    transition: background-color 0.3s ease;
   }
 }
 
-/* --- GLASS COMPONENTS --- */
+/* --- AURA UI COMPONENTS --- */
 
-.glass-panel {
-  background: var(--glass-bg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius);
-  transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+.aura-card {
+  @apply rounded-3xl border border-border bg-background/50 backdrop-blur-md transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 hover:border-primary/20;
 }
 
-.glass-panel:hover {
-  border-color: var(--glass-border-hover);
-  background: rgba(255, 255, 255, 0.05);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+.aura-btn {
+  @apply relative flex items-center justify-center gap-2 rounded-2xl px-6 py-3 font-semibold transition-all duration-200 active:scale-95 disabled:opacity-50;
+  @apply bg-primary text-primary-foreground hover:brightness-110 hover:-translate-y-0.5 shadow-lg shadow-primary/25;
 }
 
-.glass-card {
-  @apply rounded-2xl border border-white/5 bg-white/[0.02] backdrop-blur-xl transition-all duration-500 hover:border-white/10 hover:bg-white/[0.04];
+.aura-btn-secondary {
+  @apply bg-secondary text-secondary-foreground hover:bg-muted border border-border;
+  box-shadow: none;
 }
 
-.glass-btn {
-  @apply flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-3 font-medium text-white transition-all duration-300 hover:bg-white/10 hover:border-white/20 active:scale-95 disabled:opacity-50;
+.aura-input {
+  @apply w-full rounded-2xl border border-border bg-background px-6 py-4 text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all duration-200;
 }
 
-.glass-input {
-  @apply w-full rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-white placeholder:text-white/30 focus:border-primary/50 focus:bg-white/10 focus:outline-none transition-all duration-300;
+.gradient-text {
+  @apply bg-clip-text text-transparent bg-gradient-to-br from-slate-900 to-slate-500 font-bold;
 }
 
-.text-gradient {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-white to-secondary;
+.dark .gradient-text {
+  @apply bg-gradient-to-br from-white to-slate-400;
 }
 
-.glow-primary {
-  box-shadow: 0 0 20px rgba(168, 85, 247, 0.2);
+/* ODONTOMETER CUSTOMIZATION */
+.odometer.odometer-auto-theme,
+.odometer.odometer-theme-default {
+  font-family: var(--font-sans);
+  font-weight: 800;
+  display: inline-block;
+  vertical-align: middle;
+  position: relative;
+  white-space: nowrap;
+  @apply text-foreground;
 }
 
-.glow-secondary {
-  box-shadow: 0 0 20px rgba(6, 182, 212, 0.2);
+.odometer-digit {
+  display: inline-block !important;
+  position: relative;
 }
 
-/* HUD / Interface Elements */
-.hud-label {
-  @apply text-[10px] uppercase tracking-[0.2em] font-bold text-white/40;
+.odometer-ribbon {
+  display: block !important;
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
+.odometer-ribbon-inner {
+  display: block !important;
+  backface-visibility: hidden !important;
 }
 
-::-webkit-scrollbar-track {
-  background: transparent;
+.odometer-value {
+  display: block !important;
 }
 
-::-webkit-scrollbar-thumb {
-  @apply bg-white/10 rounded-full;
+/* PREMIUM SOFT SHADOWS */
+.soft-shadow {
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
 }
 
-::-webkit-scrollbar-thumb:hover {
-  @apply bg-white/20;
-}
-
-/* Animation utilities */
-.reveal {
-  animation: reveal 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-}
-
-@keyframes reveal {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* LAYOUT UTILS */
+.glass-nav {
+  @apply sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl;
 }

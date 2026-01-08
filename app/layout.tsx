@@ -15,9 +15,9 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: "DockyCount | Real-time YouTube Analytics",
+  title: "DockyCount | Advanced YouTube Analytics",
   description:
-    "Track live YouTube statistics with high precision. Modern, real-time data visualization for creators and curious minds.",
+    "Monitor live YouTube statistics with unparalleled precision. The most elegant, real-time data visualization platform for digital creators.",
   keywords: [
     "youtube subscriber count",
     "live count",
@@ -34,15 +34,9 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
-      <body className={`${outfit.variable} ${inter.variable} font-sans antialiased bg-black text-white min-h-screen flex flex-col`} suppressHydrationWarning>
-        {/* Background Visuals */}
-        <div className="bg-orbs">
-          <div className="orb-1"></div>
-          <div className="orb-2"></div>
-        </div>
-
-        <main className="flex-1 relative z-10">
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${outfit.variable} ${inter.variable} font-sans antialiased min-h-screen flex flex-col`} suppressHydrationWarning>
+        <main className="flex-1 relative">
           {children}
         </main>
 
