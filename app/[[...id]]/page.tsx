@@ -8,11 +8,6 @@ import { Toaster } from "@/components/ui/toaster"
 import { useSearchParams, useRouter, useParams } from "next/navigation"
 import Link from "next/link"
 
-// Firebase types (actual modules loaded dynamically)
-type User = any
-type Auth = any
-type Firestore = any
-
 interface ChannelData {
     id: string
     name: string
@@ -64,7 +59,7 @@ function getNextMilestone(subscribers: number) {
 
 function DockyCount() {
     const [mounted, setMounted] = useState(false)
-    const [user, setUser] = useState<User | null>(null)
+    const [user, setUser] = useState<any | null>(null)
     const [searchQuery, setSearchQuery] = useState("")
     const [searchQuery2, setSearchQuery2] = useState("")
     const [searchResults, setSearchResults] = useState<any[]>([])
@@ -77,26 +72,17 @@ function DockyCount() {
     const [usageTime, setUsageTime] = useState(0)
     const [showLimitOverlay, setShowLimitOverlay] = useState(false)
 
-    // Firebase refs (loaded dynamically)
-    const authRef = useRef<Auth | null>(null)
-    const dbRef = useRef<Firestore | null>(null)
-    const firebaseModulesRef = useRef<{
-        signInWithPopup: any,
-        signOut: any,
-        GoogleAuthProvider: any,
-        doc: any,
-        getDoc: any,
-        setDoc: any
-    } | null>(null)
-    const firebaseLoadedRef = useRef(false)
-
     const searchParams = useSearchParams()
     const router = useRouter()
     const params = useParams()
     const { toast } = useToast()
 
-    // Firebase disabled - async_hooks not available in Cloudflare Edge Runtime
-    // TODO: Use localStorage for favorites instead, or migrate to a Cloudflare-compatible auth solution
+    const intervalRef = useRef<NodeJS.Timeout | null>(null)
+    const compareIntervalRef = useRef<NodeJS.Timeout | null>(null)
+    const usageIntervalRef = useRef<NodeJS.Timeout | null>(null)
+    const odometerLoadedRef = useRef(false)
+
+    // Local storage only
     useEffect(() => {
         setMounted(true)
 
@@ -112,11 +98,6 @@ function DockyCount() {
             }
         }
     }, [])
-
-    const intervalRef = useRef<NodeJS.Timeout | null>(null)
-    const compareIntervalRef = useRef<NodeJS.Timeout | null>(null)
-    const usageIntervalRef = useRef<NodeJS.Timeout | null>(null)
-    const odometerLoadedRef = useRef(false)
 
     useEffect(() => {
         const idFromPath = params.id ? (Array.isArray(params.id) ? params.id[0] : params.id) : null
@@ -320,14 +301,7 @@ function DockyCount() {
     }
 
     const toggleFavorite = (channel: ChannelData) => {
-        if (!user) {
-            toast({
-                title: "Authentication Required",
-                description: "Please sign in to save favorites.",
-                variant: "destructive",
-            })
-            return
-        }
+        // Allow saving favorites without login (localStorage mode)
         const isFavorite = favorites.some((f) => f.id === channel.id)
         let newFavorites: Favorite[]
         if (isFavorite) {
@@ -337,6 +311,11 @@ function DockyCount() {
         }
         setFavorites(newFavorites)
         saveFavorites(newFavorites)
+
+        toast({
+            title: isFavorite ? "Removed from Favorites" : "Added to Favorites",
+            description: `Saved locally`,
+        })
     }
 
     useEffect(() => {
@@ -409,8 +388,8 @@ function DockyCount() {
                                 </button>
                             </div>
                         ) : (
-                            <button onClick={handleSignIn} className="aura-btn">
-                                Sign In
+                            <button onClick={handleSignIn} className="aura-btn opacity-50 cursor-not-allowed" disabled>
+                                Sign In (Disabled)
                             </button>
                         )}
                     </div>
