@@ -4,6 +4,8 @@ import { Code2, Copy, Check } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 
+export const runtime = "edge";
+
 export default function ApiAccessPage() {
     const [copied, setCopied] = useState(false)
 

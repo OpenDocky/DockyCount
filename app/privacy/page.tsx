@@ -1,5 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
+export const runtime = "edge";
+
 export default function PrivacyPolicy() {
     return (
         <div className="container mx-auto px-4 py-12">

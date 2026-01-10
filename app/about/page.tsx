@@ -1,5 +1,7 @@
 import { Shield, Activity, Globe, Layout, Share2, Info, ArrowRight } from "lucide-react"
 
+export const runtime = "edge";
+
 export default function AboutPage() {
     return (
         <div className="max-w-7xl mx-auto px-6 py-20">

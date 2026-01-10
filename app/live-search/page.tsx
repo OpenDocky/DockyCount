@@ -4,6 +4,8 @@ import { useState, useEffect } from "react"
 import { Search, ChevronRight } from "lucide-react"
 import { useRouter } from "next/navigation"
 
+export const runtime = "edge";
+
 export default function LiveSearchPage() {
     const [query, setQuery] = useState("")
     const [results, setResults] = useState<any[]>([])

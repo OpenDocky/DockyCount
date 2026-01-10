@@ -4,6 +4,8 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Search, Swords } from "lucide-react"
 
+export const runtime = "edge";
+
 export default function ComparePage() {
     const [q1, setQ1] = useState("")
     const [q2, setQ2] = useState("")
