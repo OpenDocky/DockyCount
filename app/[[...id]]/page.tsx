@@ -95,66 +95,22 @@ function DockyCount() {
     const params = useParams()
     const { toast } = useToast()
 
-    // Load Firebase dynamically on mount
+    // Firebase disabled - async_hooks not available in Cloudflare Edge Runtime
+    // TODO: Use localStorage for favorites instead, or migrate to a Cloudflare-compatible auth solution
     useEffect(() => {
         setMounted(true)
 
-        if (firebaseLoadedRef.current) return
-        firebaseLoadedRef.current = true
-
-        // Dynamic import of Firebase modules
-        Promise.all([
-            import("firebase/app"),
-            import("firebase/auth"),
-            import("firebase/firestore")
-        ]).then(([appModule, authModule, firestoreModule]) => {
-            const firebaseConfig = {
-                apiKey: "AIzaSyAjmXMMafuPYkYi1GzrnucNJSjxypN2gYQ",
-                authDomain: "docky-dev-fr.firebaseapp.com",
-                projectId: "docky-dev-fr",
-                storageBucket: "docky-dev-fr.firebasestorage.app",
-                messagingSenderId: "548202839817",
-                appId: "1:548202839817:web:832f713ae5135e41809dd8",
-                measurementId: "G-KLXHVFYQYY",
-            }
-
-            const app = appModule.getApps().length > 0
-                ? appModule.getApp()
-                : appModule.initializeApp(firebaseConfig)
-
-            authRef.current = authModule.getAuth(app)
-            dbRef.current = firestoreModule.getFirestore(app)
-
-            // Store module functions for later use
-            firebaseModulesRef.current = {
-                signInWithPopup: authModule.signInWithPopup,
-                signOut: authModule.signOut,
-                GoogleAuthProvider: authModule.GoogleAuthProvider,
-                doc: firestoreModule.doc,
-                getDoc: firestoreModule.getDoc,
-                setDoc: firestoreModule.setDoc
-            }
-
-            // Setup auth listener
-            authModule.onAuthStateChanged(authRef.current, async (currentUser: User) => {
-                setUser(currentUser)
-                if (currentUser && dbRef.current) {
-                    try {
-                        const userDoc = await firestoreModule.getDoc(firestoreModule.doc(dbRef.current, "users", currentUser.uid))
-                        if (userDoc.exists()) {
-                            const data = userDoc.data()
-                            setFavorites(data.favorites || [])
-                        }
-                    } catch (error) {
-                        console.error("Error loading favorites:", error)
-                    }
-                } else {
-                    setFavorites([])
+        // Load favorites from localStorage instead
+        if (typeof window !== "undefined") {
+            const savedFavorites = localStorage.getItem("dockycount_favorites")
+            if (savedFavorites) {
+                try {
+                    setFavorites(JSON.parse(savedFavorites))
+                } catch (e) {
+                    console.error("Failed to parse favorites:", e)
                 }
-            })
-        }).catch(err => {
-            console.error("Failed to load Firebase:", err)
-        })
+            }
+        }
     }, [])
 
     const intervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -305,66 +261,25 @@ function DockyCount() {
         }
     }
 
-    // Internal function called from useEffect with direct module access
-    const loadUserFavoritesInternal = async (uid: string, getDocFn: any, docFn: any, database: any) => {
-        try {
-            const userDoc = await getDocFn(docFn(database, "users", uid))
-            if (userDoc.exists()) {
-                const data = userDoc.data()
-                setFavorites(data.favorites || [])
-            }
-        } catch (error) {
-            console.error("Error loading favorites:", error)
-        }
-    }
-
-    const loadUserFavorites = async (uid: string) => {
-        if (!firebaseModulesRef.current || !dbRef.current) return
-        const { getDoc, doc } = firebaseModulesRef.current
-        try {
-            const userDoc = await getDoc(doc(dbRef.current, "users", uid))
-            if (userDoc.exists()) {
-                const data = userDoc.data()
-                setFavorites(data.favorites || [])
-            }
-        } catch (error) {
-            console.error("Error loading favorites:", error)
-        }
-    }
-
-    const saveFavorites = async (newFavorites: Favorite[]) => {
-        if (!user || !firebaseModulesRef.current || !dbRef.current) return
-        const { setDoc, doc } = firebaseModulesRef.current
-        try {
-            await setDoc(doc(dbRef.current, "users", user.uid), {
-                email: user.email,
-                displayName: user.displayName,
-                photoURL: user.photoURL,
-                favorites: newFavorites,
-            })
-        } catch (error) {
-            console.error("Error saving favorites:", error)
+    // localStorage-based favorites (Firebase disabled for Cloudflare compatibility)
+    const saveFavorites = (newFavorites: Favorite[]) => {
+        if (typeof window !== "undefined") {
+            localStorage.setItem("dockycount_favorites", JSON.stringify(newFavorites))
         }
     }
 
     const handleSignIn = async () => {
-        if (!firebaseModulesRef.current || !authRef.current) return
-        const { signInWithPopup, GoogleAuthProvider } = firebaseModulesRef.current
-        const provider = new GoogleAuthProvider()
-        try {
-            await signInWithPopup(authRef.current, provider)
-        } catch (error) {
-            console.error("Sign in error:", error)
-        }
+        toast({
+            title: "Auth Disabled",
+            description: "Google Sign-In is temporarily disabled. Favorites are saved locally.",
+        })
     }
 
     const handleSignOut = async () => {
-        if (!firebaseModulesRef.current || !authRef.current) return
-        const { signOut } = firebaseModulesRef.current
-        try {
-            await signOut(authRef.current)
-        } catch (error) {
-            console.error("Sign out error:", error)
+        setUser(null)
+        setFavorites([])
+        if (typeof window !== "undefined") {
+            localStorage.removeItem("dockycount_favorites")
         }
     }
 
