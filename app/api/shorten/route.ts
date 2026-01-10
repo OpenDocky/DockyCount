@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+export const runtime = "edge";
+
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const url = searchParams.get('url');
@@ -8,7 +10,7 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'Missing URL' }, { status: 400 });
     }
 
-    const token = "6dfe7702a2e261bfe04f6bad2";
+    const token = process.env.CUTY_TOKEN || "6dfe7702a2e261bfe04f6bad2";
 
     // Try the exact endpoint requested by user
     const endpoint = `https://cuty.io/quick?token=${token}&url=${encodeURIComponent(url)}`;
