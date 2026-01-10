@@ -2,11 +2,10 @@
 
 import { useState, useEffect, useRef, Suspense } from "react"
 import { Button } from "@/components/ui/button"
-import { Search, Star, LogOut, TrendingUp, TrendingDown, Users, Eye, Video, X, Layout, Activity, BarChart3, Globe, Shield, ChevronRight, Share2, Info } from "lucide-react"
+import { Search, Star, TrendingUp, TrendingDown, Layout, Activity, BarChart3, Globe, ChevronRight, Share2, Info, Copy, Check, Maximize2, Minimize2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
 import { useSearchParams, useRouter, useParams } from "next/navigation"
-import Link from "next/link"
 
 interface ChannelData {
     id: string
@@ -29,19 +28,26 @@ export const runtime = "edge"
 function MilestoneTracker({ current, goal }: { current: number, goal: number }) {
     const progress = Math.min((current / goal) * 100, 100)
     return (
-        <div className="space-y-3 mt-8 w-full">
+        <div className="space-y-3 mt-8 w-full group">
             <div className="flex justify-between text-[11px] font-bold text-muted-foreground uppercase tracking-[0.1em]">
                 <span>Progress to {goal.toLocaleString()}</span>
-                <span className="text-primary">{progress.toFixed(2)}%</span>
+                <span className="text-primary group-hover:text-primary/80 transition-colors">{progress.toFixed(4)}%</span>
             </div>
-            <div className="h-2.5 w-full bg-secondary rounded-full overflow-hidden shadow-inner border border-border/50">
+            <div className="h-3 w-full bg-secondary rounded-full overflow-hidden shadow-inner border border-border/50 relative">
                 <div
-                    className="h-full bg-gradient-to-r from-primary to-indigo-400 transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(99,102,241,0.3)]"
+                    className="h-full bg-gradient-to-r from-primary to-indigo-400 transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(99,102,241,0.5)] relative overflow-hidden"
                     style={{ width: `${progress}%` }}
-                />
+                >
+                    <div className="absolute inset-0 bg-white/20 animate-pulse-slow" />
+                </div>
             </div>
-            <div className="text-[10px] text-muted-foreground/60 text-center font-medium">
-                {(goal - current).toLocaleString()} subscribers remaining to milestone
+            <div className="flex justify-between items-center">
+                <div className="text-[10px] text-muted-foreground/60 font-medium">
+                    {(goal - current).toLocaleString()} remaining
+                </div>
+                <div className="text-[10px] text-primary/60 font-medium">
+                    Goal: {goal.toLocaleString()}
+                </div>
             </div>
         </div>
     )
@@ -59,7 +65,6 @@ function getNextMilestone(subscribers: number) {
 
 function DockyCount() {
     const [mounted, setMounted] = useState(false)
-    const [user, setUser] = useState<any | null>(null)
     const [searchQuery, setSearchQuery] = useState("")
     const [searchQuery2, setSearchQuery2] = useState("")
     const [searchResults, setSearchResults] = useState<any[]>([])
@@ -70,7 +75,10 @@ function DockyCount() {
     const [isSearching, setIsSearching] = useState(false)
     const [compareMode, setCompareMode] = useState(false)
     const [usageTime, setUsageTime] = useState(0)
-    const [showLimitOverlay, setShowLimitOverlay] = useState(false)
+    const [isFullscreen, setIsFullscreen] = useState(false)
+
+    // New feature: Gap calculation
+    const [subGap, setSubGap] = useState<number | null>(null)
 
     const searchParams = useSearchParams()
     const router = useRouter()
@@ -93,6 +101,14 @@ function DockyCount() {
                     console.error("Failed to parse favorites:", e)
                 }
             }
+        }
+
+        usageIntervalRef.current = setInterval(() => {
+            setUsageTime(prev => prev + 1)
+        }, 1000)
+
+        return () => {
+            if (usageIntervalRef.current) clearInterval(usageIntervalRef.current)
         }
     }, [])
 
@@ -129,18 +145,23 @@ function DockyCount() {
     useEffect(() => {
         if (selectedChannel) {
             updateOdometer("main-subscribers", selectedChannel.subscribers)
-            updateOdometer("main-views", selectedChannel.views)
-            updateOdometer("main-videos", selectedChannel.videos)
         }
     }, [selectedChannel])
 
     useEffect(() => {
         if (compareChannel) {
             updateOdometer("compare-subscribers", compareChannel.subscribers)
-            updateOdometer("compare-views", compareChannel.views)
-            updateOdometer("compare-videos", compareChannel.videos)
         }
     }, [compareChannel])
+
+    // Update gap
+    useEffect(() => {
+        if (selectedChannel && compareChannel) {
+            setSubGap(selectedChannel.subscribers - compareChannel.subscribers)
+        } else {
+            setSubGap(null)
+        }
+    }, [selectedChannel, compareChannel])
 
     useEffect(() => {
         const compareId = searchParams.get("compare")
@@ -282,21 +303,8 @@ function DockyCount() {
         localStorage.setItem("dockycount_favorites", JSON.stringify(newFavorites))
         toast({
             title: isFavorite ? "Removed from Favorites" : "Added to Favorites",
-            description: `Saved locally`,
+            description: isFavorite ? `${channel.name} removed` : `${channel.name} saved`,
         })
-    }
-
-    const handleSignIn = () => {
-        toast({
-            title: "Auth Disabled",
-            description: "Google Sign-In is temporarily disabled. Favorites are saved locally.",
-        })
-    }
-
-    const handleSignOut = () => {
-        setUser(null)
-        setFavorites([])
-        localStorage.removeItem("dockycount_favorites")
     }
 
     const formatTime = (seconds: number) => {
@@ -305,152 +313,190 @@ function DockyCount() {
         return `${minutes}m ${secs}s`
     }
 
+    const copyToClipboard = () => {
+        if (typeof window !== "undefined") {
+            navigator.clipboard.writeText(window.location.href)
+            toast({
+                title: "Link Copied!",
+                description: "Share the stats with everyone.",
+            })
+        }
+    }
+
+    const toggleFullscreen = () => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen()
+            setIsFullscreen(true)
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen()
+                setIsFullscreen(false)
+            }
+        }
+    }
+
     if (!mounted) return null
 
     return (
         <div className="min-h-screen bg-background text-foreground selection:bg-primary/20">
             <Toaster />
-            {showLimitOverlay && (
-                <div className="fixed inset-0 bg-background/90 z-[100] flex items-center justify-center p-6 backdrop-blur-xl">
-                    <div className="aura-card max-w-md w-full p-10 text-center space-y-6">
-                        <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto text-primary">
-                            <Activity className="w-10 h-10" />
-                        </div>
-                        <h2 className="text-3xl font-black">Daily Limit Reached</h2>
-                        <p className="text-muted-foreground leading-relaxed">
-                            You've reached the 1-hour daily monitoring limit for this session.
-                        </p>
-                        <Button onClick={() => window.location.reload()} variant="default" className="aura-btn w-full">
-                            Refresh Session
-                        </Button>
-                    </div>
-                </div>
-            )}
 
-            <nav className="glass-nav px-6 py-4">
+            <nav className="glass-nav px-6 py-4 sticky top-0 z-50 backdrop-blur-md bg-background/80 border-b border-border/50">
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
                     <div className="flex flex-col">
-                        <span className="text-xl font-black tracking-tighter gradient-text">DockyCount v19</span>
+                        <span className="text-xl font-black tracking-tighter gradient-text cursor-pointer" onClick={() => router.push('/')}>DockyCount <span className="text-xs align-top opacity-50 font-normal">PRO</span></span>
                         <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
-                            <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                            Live Network
+                            <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
+                            Live System
                         </div>
                     </div>
-                    <div className="flex items-center gap-6">
-                        <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-secondary rounded-2xl text-xs font-bold text-muted-foreground">
-                            <Activity className="w-3.5 h-3.5 text-primary" />
-                            {formatTime(usageTime)} active
+                    <div className="flex items-center gap-4">
+                        <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-secondary/50 rounded-full text-[10px] font-bold text-muted-foreground border border-border/50">
+                            <Activity className="w-3 h-3 text-primary" />
+                            {formatTime(usageTime)}
                         </div>
-                        <button onClick={handleSignIn} className="aura-btn opacity-50 cursor-not-allowed" disabled>
-                            Sign In (Disabled)
-                        </button>
+                        <Button variant="ghost" size="icon" onClick={toggleFullscreen} className="rounded-full w-9 h-9">
+                            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                        </Button>
                     </div>
                 </div>
             </nav>
 
-            <div className="max-w-7xl mx-auto px-6 py-12">
-                <div className="grid lg:grid-cols-12 gap-10">
+            <div className="max-w-7xl mx-auto px-6 py-8">
+                <div className="grid lg:grid-cols-12 gap-8">
+                    {/* Sidebar / Favorites */}
                     <aside className="lg:col-span-3 space-y-6 order-2 lg:order-1">
-                        <div className="aura-card p-6">
-                            <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                                    <Star className="w-4 h-4 text-primary" />
+                        <div className="aura-card p-5 bg-card/50 backdrop-blur-sm border border-border/50">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                                    <Star className="w-3.5 h-3.5 text-primary fill-primary/20" />
                                     Favorites
                                 </h3>
-                                <span className="text-[10px] font-bold bg-secondary px-2 py-0.5 rounded-full">{favorites.length}</span>
+                                <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">{favorites.length}</span>
                             </div>
-                            <div className="space-y-3">
+                            <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
                                 {favorites.length === 0 ? (
-                                    <div className="text-center py-10 text-muted-foreground/40">
-                                        <div className="w-12 h-12 bg-secondary rounded-2xl flex items-center justify-center mx-auto mb-3">
-                                            <Globe className="w-6 h-6" />
+                                    <div className="text-center py-8 text-muted-foreground/40 border border-dashed border-border/50 rounded-xl">
+                                        <div className="w-10 h-10 bg-secondary/50 rounded-xl flex items-center justify-center mx-auto mb-2">
+                                            <Globe className="w-5 h-5 opacity-50" />
                                         </div>
-                                        <p className="text-[10px] font-bold uppercase tracking-tighter">No favorites</p>
+                                        <p className="text-[10px] font-bold uppercase tracking-wide">Empty List</p>
                                     </div>
                                 ) : (
                                     favorites.map((fav) => (
                                         <button
                                             key={fav.id}
                                             onClick={() => router.push(`/${fav.id}`)}
-                                            className="w-full flex items-center gap-3 p-3 aura-card !bg-transparent hover:!bg-secondary border-none"
+                                            className="w-full flex items-center gap-3 p-2 hover:bg-secondary/80 rounded-xl transition-all group"
                                         >
-                                            <img src={fav.avatar} alt={fav.name} className="w-8 h-8 rounded-lg" />
+                                            <img src={fav.avatar} alt={fav.name} className="w-8 h-8 rounded-lg shadow-sm" />
                                             <div className="flex-1 text-left overflow-hidden">
-                                                <div className="text-xs font-bold truncate">{fav.name}</div>
+                                                <div className="text-xs font-bold truncate group-hover:text-primary transition-colors">{fav.name}</div>
                                             </div>
-                                            <ChevronRight className="w-4 h-4 text-muted-foreground/30" />
+                                            <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/30 group-hover:text-primary/50" />
                                         </button>
                                     ))
                                 )}
                             </div>
                         </div>
+
+                        <div className="aura-card p-5 bg-gradient-to-br from-primary/5 to-transparent border border-primary/10">
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="p-1.5 bg-primary/10 rounded-lg">
+                                    <Info className="w-3.5 h-3.5 text-primary" />
+                                </div>
+                                <h4 className="text-[10px] font-black uppercase tracking-widest text-primary">Pro Features</h4>
+                            </div>
+                            <ul className="space-y-2 text-[10px] font-medium text-muted-foreground/80">
+                                <li className="flex items-center gap-2"><Check className="w-3 h-3 text-green-500" /> Real-time WebSocket</li>
+                                <li className="flex items-center gap-2"><Check className="w-3 h-3 text-green-500" /> Sub-second Updates</li>
+                                <li className="flex items-center gap-2"><Check className="w-3 h-3 text-green-500" /> Comparison Engine</li>
+                            </ul>
+                        </div>
                     </aside>
 
-                    <main className="lg:col-span-9 space-y-10 order-1 lg:order-2">
-                        <div className="aura-card p-8 relative z-50">
-                            <div className="flex flex-col sm:flex-row gap-4 mb-8">
+                    {/* Main Content */}
+                    <main className="lg:col-span-9 space-y-8 order-1 lg:order-2">
+                        {/* Search & Mode Toggle */}
+                        <div className="aura-card p-6 bg-card/80 backdrop-blur-xl border border-border/50 shadow-2xl shadow-primary/5 relative z-50">
+                            <div className="flex gap-2 mb-6 p-1 bg-secondary/50 rounded-2xl w-fit">
                                 <button
                                     onClick={() => setCompareMode(false)}
-                                    className={`flex-1 aura-btn !rounded-2xl ${compareMode ? 'aura-btn-secondary' : ''}`}
+                                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${!compareMode ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}
                                 >
-                                    <Layout className="w-4 h-4 mr-2" />
+                                    <Layout className="w-3.5 h-3.5 inline-block mr-2 mb-0.5" />
                                     Single View
                                 </button>
                                 <button
                                     onClick={() => setCompareMode(true)}
-                                    className={`flex-1 aura-btn !rounded-2xl ${!compareMode ? 'aura-btn-secondary' : ''}`}
+                                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${compareMode ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}
                                 >
-                                    <BarChart3 className="w-4 h-4 mr-2" />
-                                    Compare Mode
+                                    <BarChart3 className="w-3.5 h-3.5 inline-block mr-2 mb-0.5" />
+                                    Compare
                                 </button>
                             </div>
 
                             <div className="relative">
                                 {!compareMode ? (
-                                    <div className="relative">
-                                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-muted-foreground z-20" />
+                                    <div className="relative group">
+                                        <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors z-20" />
                                         <input
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
                                             placeholder="Search YouTube channel..."
-                                            className="aura-input !pl-16 pr-6 h-16 text-lg"
+                                            className="aura-input !pl-14 h-14 text-base w-full bg-secondary/30 hover:bg-secondary/50 focus:bg-background transition-all"
                                         />
                                     </div>
                                 ) : (
                                     <div className="grid md:grid-cols-2 gap-4">
-                                        <div className="relative">
-                                            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground z-20" />
+                                        <div className="relative group">
+                                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors z-20" />
                                             <input
                                                 value={searchQuery}
                                                 onChange={(e) => setSearchQuery(e.target.value)}
                                                 placeholder="Channel 1..."
-                                                className="aura-input !pl-14 h-14 text-sm"
+                                                className="aura-input !pl-12 h-12 text-sm w-full bg-secondary/30 hover:bg-secondary/50 focus:bg-background transition-all"
                                             />
                                         </div>
-                                        <div className="relative">
-                                            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground z-20" />
+                                        <div className="relative group">
+                                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors z-20" />
                                             <input
                                                 value={searchQuery2}
                                                 onChange={(e) => setSearchQuery2(e.target.value)}
                                                 placeholder="Channel 2..."
-                                                className="aura-input !pl-14 h-14 text-sm"
+                                                className="aura-input !pl-12 h-12 text-sm w-full bg-secondary/30 hover:bg-secondary/50 focus:bg-background transition-all"
                                             />
                                         </div>
                                     </div>
                                 )}
 
+                                {/* Search Dropdown */}
                                 {(searchResults.length > 0 || (compareMode && searchResults2.length > 0)) && (
-                                    <div className="absolute top-[calc(100%+0.75rem)] left-0 right-0 z-[100] rounded-3xl shadow-2xl p-2 bg-background border border-border">
+                                    <div className="absolute top-[calc(100%+0.5rem)] left-0 right-0 z-[100] rounded-2xl shadow-2xl p-2 bg-background/95 backdrop-blur-xl border border-border/80 animate-in fade-in slide-in-from-top-2">
                                         {searchResults.map((result, index) => (
                                             <button
                                                 key={`s1-${index}`}
                                                 onClick={() => selectChannel(result, false)}
-                                                className="w-full flex items-center gap-4 p-4 hover:bg-secondary rounded-2xl text-left"
+                                                className="w-full flex items-center gap-4 p-3 hover:bg-secondary rounded-xl text-left transition-colors group"
                                             >
-                                                <img src={result[3]} className="w-12 h-12 rounded-xl object-cover" />
+                                                <img src={result[3]} className="w-10 h-10 rounded-lg object-cover shadow-sm group-hover:scale-105 transition-transform" />
                                                 <div className="flex-1 overflow-hidden">
-                                                    <div className="font-bold truncate">{result[0]}</div>
-                                                    <div className="text-[10px] text-muted-foreground uppercase">{result[1]}</div>
+                                                    <div className="font-bold text-sm truncate">{result[0]}</div>
+                                                    <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">{result[1]}</div>
+                                                </div>
+                                            </button>
+                                        ))}
+                                        {compareMode && searchResults2.length > 0 && <div className="h-px bg-border my-2" />}
+                                        {compareMode && searchResults2.map((result, index) => (
+                                            <button
+                                                key={`s2-${index}`}
+                                                onClick={() => selectChannel(result, true)}
+                                                className="w-full flex items-center gap-4 p-3 hover:bg-secondary rounded-xl text-left transition-colors group"
+                                            >
+                                                <img src={result[3]} className="w-10 h-10 rounded-lg object-cover shadow-sm group-hover:scale-105 transition-transform border border-primary/20" />
+                                                <div className="flex-1 overflow-hidden">
+                                                    <div className="font-bold text-sm truncate text-primary">{result[0]}</div>
+                                                    <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">{result[1]}</div>
                                                 </div>
                                             </button>
                                         ))}
@@ -459,33 +505,145 @@ function DockyCount() {
                             </div>
                         </div>
 
-                        {selectedChannel && (
-                            <div className={`grid ${compareMode && compareChannel ? "md:grid-cols-2" : "grid-cols-1"} gap-8`}>
-                                <div className="aura-card p-10 flex flex-col items-center text-center">
-                                    <img src={selectedChannel.avatar} className="w-28 h-28 rounded-3xl mb-4" />
-                                    <h2 className="text-3xl font-black mb-4">{selectedChannel.name}</h2>
-                                    <div className="flex gap-4 mb-8">
-                                        <button onClick={() => toggleFavorite(selectedChannel)}>
-                                            <Star className={`w-5 h-5 ${favorites.some(f => f.id === selectedChannel.id) ? 'fill-primary text-primary' : ''}`} />
-                                        </button>
-                                    </div>
-                                    <div className="w-full space-y-2">
-                                        <div className="text-[10px] font-black uppercase text-muted-foreground">Subscribers</div>
-                                        <div id="main-subscribers" className="text-7xl font-black tabular-nums">0</div>
-                                    </div>
-                                    <MilestoneTracker current={selectedChannel.subscribers} goal={getNextMilestone(selectedChannel.subscribers)} />
-                                </div>
-                                {compareMode && compareChannel && (
-                                    <div className="aura-card p-10 flex flex-col items-center text-center">
-                                        <img src={compareChannel.avatar} className="w-28 h-28 rounded-3xl mb-4" />
-                                        <h2 className="text-3xl font-black mb-4">{compareChannel.name}</h2>
-                                        <div className="w-full space-y-2">
-                                            <div className="text-[10px] font-black uppercase text-muted-foreground">Subscribers</div>
-                                            <div id="compare-subscribers" className="text-7xl font-black tabular-nums text-primary">0</div>
+                        {/* Stats Display */}
+                        {selectedChannel ? (
+                            <div className="space-y-8">
+                                <div className={`grid ${compareMode && compareChannel ? "md:grid-cols-2" : "grid-cols-1"} gap-6`}>
+
+                                    {/* Channel 1 */}
+                                    <div className="aura-card p-8 flex flex-col items-center text-center relative overflow-hidden group hover:border-primary/30 transition-all duration-500">
+                                        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
+
+                                        <div className="relative mb-6">
+                                            <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full opacity-0 group-hover:opacity-50 transition-opacity duration-700" />
+                                            <img src={selectedChannel.avatar} className="w-32 h-32 rounded-3xl relative z-10 shadow-2xl border-4 border-background group-hover:scale-105 transition-transform duration-500" />
+                                            <div className="absolute -bottom-3 -right-3 bg-red-600 text-white text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-widest shadow-lg z-20 animate-pulse">
+                                                Live
+                                            </div>
                                         </div>
-                                        <MilestoneTracker current={compareChannel.subscribers} goal={getNextMilestone(compareChannel.subscribers)} />
+
+                                        <h2 className="text-3xl font-black mb-1 leading-tight">{selectedChannel.name}</h2>
+                                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-6">{selectedChannel.id}</p>
+
+                                        <div className="flex gap-3 mb-8">
+                                            <Button variant="outline" size="sm" onClick={() => toggleFavorite(selectedChannel)} className="rounded-full h-8 px-4 text-xs font-bold gap-2">
+                                                <Star className={`w-3.5 h-3.5 ${favorites.some(f => f.id === selectedChannel.id) ? 'fill-yellow-500 text-yellow-500' : ''}`} />
+                                                {favorites.some(f => f.id === selectedChannel.id) ? 'Saved' : 'Save'}
+                                            </Button>
+                                            <Button variant="outline" size="sm" onClick={copyToClipboard} className="rounded-full h-8 w-8 p-0">
+                                                <Share2 className="w-3.5 h-3.5" />
+                                            </Button>
+                                        </div>
+
+                                        <div className="w-full py-8 bg-secondary/20 rounded-3xl border border-border/50 mb-6 relative overflow-hidden">
+                                            <div className="absolute inset-0 bg-grid-white/5 mask-image-b" />
+                                            <div className="relative z-10">
+                                                <div className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] mb-2">Total Subscribers</div>
+                                                <div id="main-subscribers" className={`font-black tabular-nums tracking-tighter leading-none ${compareMode ? 'text-5xl lg:text-6xl' : 'text-7xl lg:text-8xl'}`}>
+                                                    0
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <MilestoneTracker current={selectedChannel.subscribers} goal={getNextMilestone(selectedChannel.subscribers)} />
+
+                                        <div className="grid grid-cols-2 w-full gap-4 mt-8 pt-8 border-t border-border/50">
+                                            <div>
+                                                <div className="text-[9px] font-black uppercase text-muted-foreground tracking-widest mb-1">Total Views</div>
+                                                <div className="text-xl font-bold tabular-nums">{selectedChannel.views.toLocaleString()}</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-[9px] font-black uppercase text-muted-foreground tracking-widest mb-1">Videos</div>
+                                                <div className="text-xl font-bold tabular-nums">{selectedChannel.videos.toLocaleString()}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Channel 2 */}
+                                    {compareMode && compareChannel && (
+                                        <div className="aura-card p-8 flex flex-col items-center text-center relative overflow-hidden group hover:border-primary/30 transition-all duration-500">
+                                            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
+
+                                            <div className="relative mb-6">
+                                                <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full opacity-0 group-hover:opacity-50 transition-opacity duration-700" />
+                                                <img src={compareChannel.avatar} className="w-32 h-32 rounded-3xl relative z-10 shadow-2xl border-4 border-background group-hover:scale-105 transition-transform duration-500" />
+                                            </div>
+
+                                            <h2 className="text-3xl font-black mb-1 leading-tight">{compareChannel.name}</h2>
+                                            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-6">{compareChannel.id}</p>
+
+                                            <div className="flex gap-3 mb-8">
+                                                <Button variant="outline" size="sm" onClick={() => toggleFavorite(compareChannel)} className="rounded-full h-8 px-4 text-xs font-bold gap-2">
+                                                    <Star className={`w-3.5 h-3.5 ${favorites.some(f => f.id === compareChannel.id) ? 'fill-yellow-500 text-yellow-500' : ''}`} />
+                                                    {favorites.some(f => f.id === compareChannel.id) ? 'Saved' : 'Save'}
+                                                </Button>
+                                            </div>
+
+                                            <div className="w-full py-8 bg-secondary/20 rounded-3xl border border-border/50 mb-6 relative overflow-hidden">
+                                                <div className="absolute inset-0 bg-grid-white/5 mask-image-b" />
+                                                <div className="relative z-10">
+                                                    <div className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] mb-2">Total Subscribers</div>
+                                                    <div id="compare-subscribers" className="text-5xl lg:text-6xl font-black tabular-nums tracking-tighter leading-none text-primary">
+                                                        0
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <MilestoneTracker current={compareChannel.subscribers} goal={getNextMilestone(compareChannel.subscribers)} />
+
+                                            <div className="grid grid-cols-2 w-full gap-4 mt-8 pt-8 border-t border-border/50">
+                                                <div>
+                                                    <div className="text-[9px] font-black uppercase text-muted-foreground tracking-widest mb-1">Total Views</div>
+                                                    <div className="text-xl font-bold tabular-nums">{compareChannel.views.toLocaleString()}</div>
+                                                </div>
+                                                <div>
+                                                    <div className="text-[9px] font-black uppercase text-muted-foreground tracking-widest mb-1">Videos</div>
+                                                    <div className="text-xl font-bold tabular-nums">{compareChannel.videos.toLocaleString()}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Comparison Analytics Header */}
+                                {compareMode && selectedChannel && compareChannel && subGap !== null && (
+                                    <div className="aura-card p-8 bg-gradient-to-br from-card to-secondary/20 border-primary/10 animate-in fade-in slide-in-from-bottom-4">
+                                        <div className="flex items-center justify-center gap-2 mb-6 opacity-50">
+                                            <Activity className="w-4 h-4" />
+                                            <span className="text-xs font-black uppercase tracking-[0.3em]">Gap Analysis</span>
+                                        </div>
+
+                                        <div className="flex flex-col md:flex-row items-center justify-around gap-8">
+                                            <div className="text-center">
+                                                <div className="text-[10px] font-bold uppercase text-muted-foreground mb-2">Subscriber Difference</div>
+                                                <div className="text-5xl md:text-6xl font-black tracking-tighter tabular-nums flex items-center justify-center gap-3">
+                                                    {subGap > 0 ? <TrendingUp className="w-8 h-8 text-green-500" /> : <TrendingDown className="w-8 h-8 text-red-500" />}
+                                                    {Math.abs(subGap).toLocaleString()}
+                                                </div>
+                                                <div className="mt-2 text-xs font-bold bg-primary/10 text-primary py-1 px-3 rounded-full inline-block">
+                                                    {subGap > 0 ? `${selectedChannel.name} leads` : `${compareChannel.name} leads`}
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
+                            </div>
+                        ) : (
+                            // Welcome / Empty State
+                            <div className="aura-card p-12 text-center flex flex-col items-center justify-center h-[500px] border-dashed border-2 border-border/50 bg-secondary/5">
+                                <div className="w-24 h-24 bg-gradient-to-br from-primary/20 to-purple-500/20 rounded-[2rem] flex items-center justify-center mb-6 shadow-2xl relative">
+                                    <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
+                                    <BarChart3 className="w-10 h-10 text-primary relative z-10" />
+                                </div>
+                                <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-4">Start Monitoring</h2>
+                                <p className="text-muted-foreground max-w-md mx-auto mb-8 text-lg">
+                                    Search for any YouTube channel above to see real-time statistics, future projections, and detailed comparisons.
+                                </p>
+                                <div className="flex gap-2">
+                                    <div className="h-2 w-2 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]" />
+                                    <div className="h-2 w-2 rounded-full bg-primary animate-bounce [animation-delay:-0.15s]" />
+                                    <div className="h-2 w-2 rounded-full bg-primary animate-bounce" />
+                                </div>
                             </div>
                         )}
                     </main>
@@ -497,7 +655,14 @@ function DockyCount() {
 
 export default function DockyCountPage() {
     return (
-        <Suspense fallback={<div>Loading...</div>}>
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-background">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                    <div className="text-xs font-black uppercase tracking-widest text-muted-foreground animate-pulse">Initializing System</div>
+                </div>
+            </div>
+        }>
             <DockyCount />
         </Suspense>
     )
