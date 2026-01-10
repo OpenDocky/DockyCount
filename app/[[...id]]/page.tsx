@@ -21,9 +21,15 @@ const firebaseConfig = {
     measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 }
 
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig)
-const auth = getAuth(app)
-const db = getFirestore(app)
+// Initialize Firebase only in the browser
+let auth: any
+let db: any
+
+if (typeof window !== "undefined") {
+    const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig)
+    auth = getAuth(app)
+    db = getFirestore(app)
+}
 
 interface ChannelData {
     id: string
@@ -96,6 +102,19 @@ function DockyCount() {
 
     useEffect(() => {
         setMounted(true)
+    }, [])
+
+    useEffect(() => {
+        if (!auth) return
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+            setUser(currentUser)
+            if (currentUser) {
+                loadUserFavorites(currentUser.uid)
+            } else {
+                setFavorites([])
+            }
+        })
+        return () => unsubscribe()
     }, [])
 
     const intervalRef = useRef<NodeJS.Timeout | null>(null)
