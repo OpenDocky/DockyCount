@@ -140,6 +140,18 @@ function DockyCount() {
 
             odometerLoadedRef.current = true
         }
+
+        // Fix Odometer specific display issues
+        const style = document.createElement('style');
+        style.innerHTML = `
+            .odometer {
+                white-space: nowrap;
+            }
+            .odometer-digit {
+                display: inline-block !important;
+            }
+        `;
+        document.head.appendChild(style);
     }, [])
 
     useEffect(() => {
@@ -539,7 +551,7 @@ function DockyCount() {
                                             <div className="absolute inset-0 bg-grid-white/5 mask-image-b" />
                                             <div className="relative z-10">
                                                 <div className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] mb-2">Total Subscribers</div>
-                                                <div id="main-subscribers" className={`font-black tabular-nums tracking-tighter leading-none ${compareMode ? 'text-5xl lg:text-6xl' : 'text-7xl lg:text-8xl'}`}>
+                                                <div id="main-subscribers" className={`font-black tabular-nums tracking-tighter leading-none whitespace-nowrap ${compareMode ? 'text-5xl lg:text-6xl' : 'text-7xl lg:text-8xl'}`}>
                                                     0
                                                 </div>
                                             </div>
@@ -583,7 +595,7 @@ function DockyCount() {
                                                 <div className="absolute inset-0 bg-grid-white/5 mask-image-b" />
                                                 <div className="relative z-10">
                                                     <div className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] mb-2">Total Subscribers</div>
-                                                    <div id="compare-subscribers" className="text-5xl lg:text-6xl font-black tabular-nums tracking-tighter leading-none text-primary">
+                                                    <div id="compare-subscribers" className="text-5xl lg:text-6xl font-black tabular-nums tracking-tighter leading-none text-primary whitespace-nowrap">
                                                         0
                                                     </div>
                                                 </div>
