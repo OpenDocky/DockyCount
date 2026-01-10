@@ -46,7 +46,7 @@ interface Favorite {
 }
 
 export const dynamic = "force-dynamic"
-export const runtime = "edge"
+// export const runtime = "edge" // Tentative fix: disable edge to fallback to nodejs_compat
 
 function MilestoneTracker({ current, goal }: { current: number, goal: number }) {
     const progress = Math.min((current / goal) * 100, 100)
