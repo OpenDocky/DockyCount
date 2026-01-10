@@ -76,8 +76,6 @@ function DockyCount() {
     const [compareMode, setCompareMode] = useState(false)
     const [usageTime, setUsageTime] = useState(0)
     const [isFullscreen, setIsFullscreen] = useState(false)
-
-    // New feature: Gap calculation
     const [subGap, setSubGap] = useState<number | null>(null)
 
     const searchParams = useSearchParams()
@@ -89,6 +87,162 @@ function DockyCount() {
     const compareIntervalRef = useRef<NodeJS.Timeout | null>(null)
     const usageIntervalRef = useRef<NodeJS.Timeout | null>(null)
     const odometerLoadedRef = useRef(false)
+    const odometerRefs = useRef<{ [key: string]: any }>({})
+
+    // --- Helper Functions Definitions (BEFORE useEffect) ---
+
+    const fetchChannelStats = async (channelId: string, isCompare = false) => {
+        try {
+            const response = await fetch(`/api/stats/${channelId}`)
+            const data = await response.json()
+            if (data && data.items && data.items.length > 0) {
+                const item = data.items[0]
+                const channelData: ChannelData = {
+                    id: channelId,
+                    name: item.snippet.title,
+                    avatar: item.snippet.thumbnails.default.url,
+                    subscribers: Number.parseInt(item.statistics.subscriberCount),
+                    views: Number.parseInt(item.statistics.viewCount),
+                    videos: Number.parseInt(item.statistics.videoCount),
+                }
+                if (isCompare) {
+                    setCompareChannel(channelData)
+                } else {
+                    setSelectedChannel(channelData)
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching stats:", error)
+        }
+    }
+
+    const updateOdometer = (id: string, value: number) => {
+        const element = document.getElementById(id)
+        if (element && typeof window !== "undefined" && (window as any).Odometer) {
+            // Check if we already have an instance for this ID
+            if (!odometerRefs.current[id] || odometerRefs.current[id].el !== element) {
+                // Initialize new odometer
+                odometerRefs.current[id] = new (window as any).Odometer({
+                    el: element,
+                    value: value,
+                    format: "(,ddd)",
+                    theme: "default",
+                    duration: 500
+                })
+            } else {
+                odometerRefs.current[id].update(value)
+            }
+        } else if (element) {
+            element.textContent = value.toLocaleString()
+        }
+    }
+
+    const searchChannels = async (query: string) => {
+        if (!query.trim()) {
+            setSearchResults([])
+            return
+        }
+        setIsSearching(true)
+        try {
+            const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`)
+            const data = await response.json()
+            if (data && data.list && data.list.length > 0) {
+                setSearchResults(data.list.slice(0, 5))
+            } else {
+                setSearchResults([])
+            }
+        } catch (error) {
+            console.error("Search error:", error)
+        } finally {
+            setIsSearching(false)
+        }
+    }
+
+    const searchChannels2 = async (query: string) => {
+        if (!query.trim()) {
+            setSearchResults2([])
+            return
+        }
+        setIsSearching(true)
+        try {
+            const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`)
+            const data = await response.json()
+            if (data && data.list && data.list.length > 0) {
+                setSearchResults2(data.list.slice(0, 5))
+            } else {
+                setSearchResults2([])
+            }
+        } catch (error) {
+            console.error("Search error:", error)
+        } finally {
+            setIsSearching(false)
+        }
+    }
+
+    const selectChannel = async (result: any, isCompare = false) => {
+        const channelId = result[2]
+        if (!isCompare) {
+            router.push(`/${channelId}`)
+            setSearchResults([])
+            setSearchQuery("")
+            return
+        }
+        if (isCompare) {
+            if (compareIntervalRef.current) clearInterval(compareIntervalRef.current)
+            fetchChannelStats(channelId, true)
+            compareIntervalRef.current = setInterval(() => {
+                fetchChannelStats(channelId, true)
+            }, 2000)
+        }
+        setSearchResults2([])
+        setSearchQuery2("")
+    }
+
+    const toggleFavorite = (channel: ChannelData) => {
+        const isFavorite = favorites.some((f) => f.id === channel.id)
+        let newFavorites: Favorite[]
+        if (isFavorite) {
+            newFavorites = favorites.filter((f) => f.id !== channel.id)
+        } else {
+            newFavorites = [...favorites, { id: channel.id, name: channel.name, avatar: channel.avatar }]
+        }
+        setFavorites(newFavorites)
+        localStorage.setItem("dockycount_favorites", JSON.stringify(newFavorites))
+        toast({
+            title: isFavorite ? "Removed from Favorites" : "Added to Favorites",
+            description: isFavorite ? `${channel.name} removed` : `${channel.name} saved`,
+        })
+    }
+
+    const copyToClipboard = () => {
+        if (typeof window !== "undefined") {
+            navigator.clipboard.writeText(window.location.href)
+            toast({
+                title: "Link Copied!",
+                description: "Share the stats with everyone.",
+            })
+        }
+    }
+
+    const toggleFullscreen = () => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen()
+            setIsFullscreen(true)
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen()
+                setIsFullscreen(false)
+            }
+        }
+    }
+
+    const formatTime = (seconds: number) => {
+        const minutes = Math.floor(seconds / 60)
+        const secs = seconds % 60
+        return `${minutes}m ${secs}s`
+    }
+
+    // --- useEffects (AFTER function definitions) ---
 
     useEffect(() => {
         setMounted(true)
@@ -141,32 +295,52 @@ function DockyCount() {
             odometerLoadedRef.current = true
         }
 
-        // Fix Odometer specific display issues
-        const style = document.createElement('style');
+        // Force CSS for Odometer
+        const style = document.createElement('style')
         style.innerHTML = `
-            .odometer {
-                white-space: nowrap;
+            .odometer.odometer-auto-theme, .odometer.odometer-theme-default {
+                display: inline-block;
+                vertical-align: middle;
+                *vertical-align: auto;
+                *zoom: 1;
+                *display: inline;
+                position: relative;
+                white-space: nowrap !important;
             }
-            .odometer-digit {
+            .odometer.odometer-auto-theme .odometer-digit, .odometer.odometer-theme-default .odometer-digit {
                 display: inline-block !important;
+                vertical-align: middle;
             }
-        `;
-        document.head.appendChild(style);
+            .odometer.odometer-auto-theme .odometer-digit .odometer-digit-spacer, .odometer.odometer-theme-default .odometer-digit .odometer-digit-spacer {
+                display: inline-block !important;
+                vertical-align: middle;
+            }
+            .odometer.odometer-auto-theme .odometer-digit .odometer-digit-inner, .odometer.odometer-theme-default .odometer-digit .odometer-digit-inner {
+                display: block;
+            }
+        `
+        document.head.appendChild(style)
+        return () => {
+            try { document.head.removeChild(style) } catch (e) { }
+        }
     }, [])
 
     useEffect(() => {
         if (selectedChannel) {
-            updateOdometer("main-subscribers", selectedChannel.subscribers)
+            setTimeout(() => {
+                updateOdometer("main-subscribers", selectedChannel.subscribers)
+            }, 50)
         }
-    }, [selectedChannel])
+    }, [selectedChannel, compareMode])
 
     useEffect(() => {
         if (compareChannel) {
-            updateOdometer("compare-subscribers", compareChannel.subscribers)
+            setTimeout(() => {
+                updateOdometer("compare-subscribers", compareChannel.subscribers)
+            }, 50)
         }
-    }, [compareChannel])
+    }, [compareChannel, compareMode])
 
-    // Update gap
     useEffect(() => {
         if (selectedChannel && compareChannel) {
             setSubGap(selectedChannel.subscribers - compareChannel.subscribers)
@@ -186,90 +360,6 @@ function DockyCount() {
         }
     }, [searchParams])
 
-    const fetchChannelStats = async (channelId: string, isCompare = false) => {
-        try {
-            const response = await fetch(`/api/stats/${channelId}`)
-            const data = await response.json()
-            if (data && data.items && data.items.length > 0) {
-                const item = data.items[0]
-                const channelData: ChannelData = {
-                    id: channelId,
-                    name: item.snippet.title,
-                    avatar: item.snippet.thumbnails.default.url,
-                    subscribers: Number.parseInt(item.statistics.subscriberCount),
-                    views: Number.parseInt(item.statistics.viewCount),
-                    videos: Number.parseInt(item.statistics.videoCount),
-                }
-                if (isCompare) {
-                    setCompareChannel(channelData)
-                } else {
-                    setSelectedChannel(channelData)
-                }
-            }
-        } catch (error) {
-            console.error("Error fetching stats:", error)
-        }
-    }
-
-    const updateOdometer = (id: string, value: number) => {
-        const element = document.getElementById(id)
-        if (element && typeof window !== "undefined" && (window as any).Odometer) {
-            if (!(element as any).odometer) {
-                ; (element as any).odometer = new (window as any).Odometer({
-                    el: element,
-                    value: 0,
-                    format: "(,ddd)",
-                    theme: "default",
-                })
-            }
-            ; (element as any).odometer.update(value)
-        } else if (element) {
-            element.textContent = value.toLocaleString()
-        }
-    }
-
-    const searchChannels = async (query: string) => {
-        if (!query.trim()) {
-            setSearchResults([])
-            return
-        }
-        setIsSearching(true)
-        try {
-            const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`)
-            const data = await response.json()
-            if (data && data.list && data.list.length > 0) {
-                setSearchResults(data.list.slice(0, 5))
-            } else {
-                setSearchResults([])
-            }
-        } catch (error) {
-            console.error("Search error:", error)
-        } finally {
-            setIsSearching(false)
-        }
-    }
-
-    const searchChannels2 = async (query: string) => {
-        if (!query.trim()) {
-            setSearchResults2([])
-            return
-        }
-        setIsSearching(true)
-        try {
-            const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`)
-            const data = await response.json()
-            if (data && data.list && data.list.length > 0) {
-                setSearchResults2(data.list.slice(0, 5))
-            } else {
-                setSearchResults2([])
-            }
-        } catch (error) {
-            console.error("Search error:", error)
-        } finally {
-            setIsSearching(false)
-        }
-    }
-
     useEffect(() => {
         const timer = setTimeout(() => {
             searchChannels(searchQuery)
@@ -284,68 +374,6 @@ function DockyCount() {
         return () => clearTimeout(timer)
     }, [searchQuery2])
 
-    const selectChannel = async (result: any, isCompare = false) => {
-        const channelId = result[2]
-        if (!isCompare) {
-            router.push(`/${channelId}`)
-            setSearchResults([])
-            setSearchQuery("")
-            return
-        }
-        if (isCompare) {
-            if (compareIntervalRef.current) clearInterval(compareIntervalRef.current)
-            fetchChannelStats(channelId, true)
-            compareIntervalRef.current = setInterval(() => {
-                fetchChannelStats(channelId, true)
-            }, 2000)
-        }
-        setSearchResults2([])
-        setSearchQuery2("")
-    }
-
-    const toggleFavorite = (channel: ChannelData) => {
-        const isFavorite = favorites.some((f) => f.id === channel.id)
-        let newFavorites: Favorite[]
-        if (isFavorite) {
-            newFavorites = favorites.filter((f) => f.id !== channel.id)
-        } else {
-            newFavorites = [...favorites, { id: channel.id, name: channel.name, avatar: channel.avatar }]
-        }
-        setFavorites(newFavorites)
-        localStorage.setItem("dockycount_favorites", JSON.stringify(newFavorites))
-        toast({
-            title: isFavorite ? "Removed from Favorites" : "Added to Favorites",
-            description: isFavorite ? `${channel.name} removed` : `${channel.name} saved`,
-        })
-    }
-
-    const formatTime = (seconds: number) => {
-        const minutes = Math.floor(seconds / 60)
-        const secs = seconds % 60
-        return `${minutes}m ${secs}s`
-    }
-
-    const copyToClipboard = () => {
-        if (typeof window !== "undefined") {
-            navigator.clipboard.writeText(window.location.href)
-            toast({
-                title: "Link Copied!",
-                description: "Share the stats with everyone.",
-            })
-        }
-    }
-
-    const toggleFullscreen = () => {
-        if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen()
-            setIsFullscreen(true)
-        } else {
-            if (document.exitFullscreen) {
-                document.exitFullscreen()
-                setIsFullscreen(false)
-            }
-        }
-    }
 
     if (!mounted) return null
 
@@ -551,7 +579,7 @@ function DockyCount() {
                                             <div className="absolute inset-0 bg-grid-white/5 mask-image-b" />
                                             <div className="relative z-10">
                                                 <div className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] mb-2">Total Subscribers</div>
-                                                <div id="main-subscribers" className={`font-black tabular-nums tracking-tighter leading-none whitespace-nowrap ${compareMode ? 'text-5xl lg:text-6xl' : 'text-7xl lg:text-8xl'}`}>
+                                                <div id="main-subscribers" key={`main-subscribers-${compareMode}`} className={`font-black tabular-nums tracking-tighter leading-none whitespace-nowrap ${compareMode ? 'text-5xl lg:text-6xl' : 'text-7xl lg:text-8xl'}`}>
                                                     0
                                                 </div>
                                             </div>
@@ -595,7 +623,7 @@ function DockyCount() {
                                                 <div className="absolute inset-0 bg-grid-white/5 mask-image-b" />
                                                 <div className="relative z-10">
                                                     <div className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] mb-2">Total Subscribers</div>
-                                                    <div id="compare-subscribers" className="text-5xl lg:text-6xl font-black tabular-nums tracking-tighter leading-none text-primary whitespace-nowrap">
+                                                    <div id="compare-subscribers" key="compare-subscribers" className="text-5xl lg:text-6xl font-black tabular-nums tracking-tighter leading-none text-primary whitespace-nowrap">
                                                         0
                                                     </div>
                                                 </div>
