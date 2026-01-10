@@ -109,13 +109,13 @@ function DockyCount() {
             import("firebase/firestore")
         ]).then(([appModule, authModule, firestoreModule]) => {
             const firebaseConfig = {
-                apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-                authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-                projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-                storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-                messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-                appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-                measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+                apiKey: "AIzaSyAjmXMMafuPYkYi1GzrnucNJSjxypN2gYQ",
+                authDomain: "docky-dev-fr.firebaseapp.com",
+                projectId: "docky-dev-fr",
+                storageBucket: "docky-dev-fr.firebasestorage.app",
+                messagingSenderId: "548202839817",
+                appId: "1:548202839817:web:832f713ae5135e41809dd8",
+                measurementId: "G-KLXHVFYQYY",
             }
 
             const app = appModule.getApps().length > 0
