@@ -327,8 +327,11 @@ function DockyCount() {
 
     useEffect(() => {
         if (selectedChannel) {
+            // Small delay to ensure DOM is ready if switching modes
             setTimeout(() => {
                 updateOdometer("main-subscribers", selectedChannel.subscribers)
+                updateOdometer("main-views", selectedChannel.views)
+                updateOdometer("main-videos", selectedChannel.videos)
             }, 50)
         }
     }, [selectedChannel, compareMode])
@@ -337,13 +340,19 @@ function DockyCount() {
         if (compareChannel) {
             setTimeout(() => {
                 updateOdometer("compare-subscribers", compareChannel.subscribers)
+                updateOdometer("compare-views", compareChannel.views)
+                updateOdometer("compare-videos", compareChannel.videos)
             }, 50)
         }
     }, [compareChannel, compareMode])
 
     useEffect(() => {
         if (selectedChannel && compareChannel) {
+            const diff = Math.abs(selectedChannel.subscribers - compareChannel.subscribers)
             setSubGap(selectedChannel.subscribers - compareChannel.subscribers)
+            setTimeout(() => {
+                updateOdometer("gap-difference", diff)
+            }, 50)
         } else {
             setSubGap(null)
         }
@@ -580,7 +589,6 @@ function DockyCount() {
                                             <div className="relative z-10">
                                                 <div className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] mb-2">Total Subscribers</div>
                                                 <div id="main-subscribers" key={`main-subscribers-${compareMode}`} className={`font-black tabular-nums tracking-tighter leading-none whitespace-nowrap ${compareMode ? 'text-5xl lg:text-6xl' : 'text-7xl lg:text-8xl'}`}>
-                                                    0
                                                 </div>
                                             </div>
                                         </div>
@@ -590,11 +598,11 @@ function DockyCount() {
                                         <div className="grid grid-cols-2 w-full gap-4 mt-8 pt-8 border-t border-border/50">
                                             <div>
                                                 <div className="text-[9px] font-black uppercase text-muted-foreground tracking-widest mb-1">Total Views</div>
-                                                <div className="text-xl font-bold tabular-nums">{selectedChannel.views.toLocaleString()}</div>
+                                                <div id="main-views" key={`main-views-${compareMode}`} className="text-2xl font-bold tabular-nums whitespace-nowrap"></div>
                                             </div>
                                             <div>
                                                 <div className="text-[9px] font-black uppercase text-muted-foreground tracking-widest mb-1">Videos</div>
-                                                <div className="text-xl font-bold tabular-nums">{selectedChannel.videos.toLocaleString()}</div>
+                                                <div id="main-videos" key={`main-videos-${compareMode}`} className="text-2xl font-bold tabular-nums whitespace-nowrap"></div>
                                             </div>
                                         </div>
                                     </div>
@@ -624,7 +632,6 @@ function DockyCount() {
                                                 <div className="relative z-10">
                                                     <div className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] mb-2">Total Subscribers</div>
                                                     <div id="compare-subscribers" key="compare-subscribers" className="text-5xl lg:text-6xl font-black tabular-nums tracking-tighter leading-none text-primary whitespace-nowrap">
-                                                        0
                                                     </div>
                                                 </div>
                                             </div>
@@ -634,11 +641,11 @@ function DockyCount() {
                                             <div className="grid grid-cols-2 w-full gap-4 mt-8 pt-8 border-t border-border/50">
                                                 <div>
                                                     <div className="text-[9px] font-black uppercase text-muted-foreground tracking-widest mb-1">Total Views</div>
-                                                    <div className="text-xl font-bold tabular-nums">{compareChannel.views.toLocaleString()}</div>
+                                                    <div id="compare-views" className="text-2xl font-bold tabular-nums whitespace-nowrap"></div>
                                                 </div>
                                                 <div>
                                                     <div className="text-[9px] font-black uppercase text-muted-foreground tracking-widest mb-1">Videos</div>
-                                                    <div className="text-xl font-bold tabular-nums">{compareChannel.videos.toLocaleString()}</div>
+                                                    <div id="compare-videos" className="text-2xl font-bold tabular-nums whitespace-nowrap"></div>
                                                 </div>
                                             </div>
                                         </div>
@@ -656,9 +663,9 @@ function DockyCount() {
                                         <div className="flex flex-col md:flex-row items-center justify-around gap-8">
                                             <div className="text-center">
                                                 <div className="text-[10px] font-bold uppercase text-muted-foreground mb-2">Subscriber Difference</div>
-                                                <div className="text-5xl md:text-6xl font-black tracking-tighter tabular-nums flex items-center justify-center gap-3">
+                                                <div className="text-5xl md:text-6xl font-black tracking-tighter tabular-nums flex items-center justify-center gap-3 whitespace-nowrap">
                                                     {subGap > 0 ? <TrendingUp className="w-8 h-8 text-green-500" /> : <TrendingDown className="w-8 h-8 text-red-500" />}
-                                                    {Math.abs(subGap).toLocaleString()}
+                                                    <div id="gap-difference"></div>
                                                 </div>
                                                 <div className="mt-2 text-xs font-bold bg-primary/10 text-primary py-1 px-3 rounded-full inline-block">
                                                     {subGap > 0 ? `${selectedChannel.name} leads` : `${compareChannel.name} leads`}
