@@ -1,9 +1,6 @@
 "use client"
 
 import { useState, useEffect, useRef, Suspense } from "react"
-import { initializeApp, getApps, getApp } from "firebase/app"
-import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, type User } from "firebase/auth"
-import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore"
 import { Button } from "@/components/ui/button"
 import { Search, Star, LogOut, TrendingUp, TrendingDown, Users, Eye, Video, X, Layout, Activity, BarChart3, Globe, Shield, ChevronRight, Share2, Info } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
@@ -11,24 +8,10 @@ import { Toaster } from "@/components/ui/toaster"
 import { useSearchParams, useRouter, useParams } from "next/navigation"
 import Link from "next/link"
 
-// Initialize Firebase only in the browser
-let auth: any
-let db: any
-
-if (typeof window !== "undefined") {
-    const firebaseConfig = {
-        apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-        authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-        messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-        appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-        measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
-    }
-    const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig)
-    auth = getAuth(app)
-    db = getFirestore(app)
-}
+// Firebase types (actual modules loaded dynamically)
+type User = any
+type Auth = any
+type Firestore = any
 
 interface ChannelData {
     id: string
@@ -46,7 +29,7 @@ interface Favorite {
 }
 
 export const dynamic = "force-dynamic"
-// export const runtime = "edge" // Tentative fix: disable edge to fallback to nodejs_compat
+export const runtime = "edge"
 
 function MilestoneTracker({ current, goal }: { current: number, goal: number }) {
     const progress = Math.min((current / goal) * 100, 100)
@@ -94,26 +77,84 @@ function DockyCount() {
     const [usageTime, setUsageTime] = useState(0)
     const [showLimitOverlay, setShowLimitOverlay] = useState(false)
 
+    // Firebase refs (loaded dynamically)
+    const authRef = useRef<Auth | null>(null)
+    const dbRef = useRef<Firestore | null>(null)
+    const firebaseModulesRef = useRef<{
+        signInWithPopup: any,
+        signOut: any,
+        GoogleAuthProvider: any,
+        doc: any,
+        getDoc: any,
+        setDoc: any
+    } | null>(null)
+    const firebaseLoadedRef = useRef(false)
+
     const searchParams = useSearchParams()
     const router = useRouter()
     const params = useParams()
     const { toast } = useToast()
 
+    // Load Firebase dynamically on mount
     useEffect(() => {
         setMounted(true)
-    }, [])
 
-    useEffect(() => {
-        if (!auth) return
-        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-            setUser(currentUser)
-            if (currentUser) {
-                loadUserFavorites(currentUser.uid)
-            } else {
-                setFavorites([])
+        if (firebaseLoadedRef.current) return
+        firebaseLoadedRef.current = true
+
+        // Dynamic import of Firebase modules
+        Promise.all([
+            import("firebase/app"),
+            import("firebase/auth"),
+            import("firebase/firestore")
+        ]).then(([appModule, authModule, firestoreModule]) => {
+            const firebaseConfig = {
+                apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+                authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+                projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+                storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+                messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+                appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+                measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
             }
+
+            const app = appModule.getApps().length > 0
+                ? appModule.getApp()
+                : appModule.initializeApp(firebaseConfig)
+
+            authRef.current = authModule.getAuth(app)
+            dbRef.current = firestoreModule.getFirestore(app)
+
+            // Store module functions for later use
+            firebaseModulesRef.current = {
+                signInWithPopup: authModule.signInWithPopup,
+                signOut: authModule.signOut,
+                GoogleAuthProvider: authModule.GoogleAuthProvider,
+                doc: firestoreModule.doc,
+                getDoc: firestoreModule.getDoc,
+                setDoc: firestoreModule.setDoc
+            }
+
+            // Setup auth listener
+            authModule.onAuthStateChanged(authRef.current, async (currentUser: User) => {
+                setUser(currentUser)
+                if (currentUser && dbRef.current) {
+                    try {
+                        const userDoc = await firestoreModule.getDoc(firestoreModule.doc(dbRef.current, "users", currentUser.uid))
+                        if (userDoc.exists()) {
+                            const data = userDoc.data()
+                            setFavorites(data.favorites || [])
+                        }
+                    } catch (error) {
+                        console.error("Error loading favorites:", error)
+                    }
+                } else {
+                    setFavorites([])
+                }
+            })
+        }).catch(err => {
+            console.error("Failed to load Firebase:", err)
         })
-        return () => unsubscribe()
     }, [])
 
     const intervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -264,9 +305,24 @@ function DockyCount() {
         }
     }
 
-    const loadUserFavorites = async (uid: string) => {
+    // Internal function called from useEffect with direct module access
+    const loadUserFavoritesInternal = async (uid: string, getDocFn: any, docFn: any, database: any) => {
         try {
-            const userDoc = await getDoc(doc(db, "users", uid))
+            const userDoc = await getDocFn(docFn(database, "users", uid))
+            if (userDoc.exists()) {
+                const data = userDoc.data()
+                setFavorites(data.favorites || [])
+            }
+        } catch (error) {
+            console.error("Error loading favorites:", error)
+        }
+    }
+
+    const loadUserFavorites = async (uid: string) => {
+        if (!firebaseModulesRef.current || !dbRef.current) return
+        const { getDoc, doc } = firebaseModulesRef.current
+        try {
+            const userDoc = await getDoc(doc(dbRef.current, "users", uid))
             if (userDoc.exists()) {
                 const data = userDoc.data()
                 setFavorites(data.favorites || [])
@@ -277,9 +333,10 @@ function DockyCount() {
     }
 
     const saveFavorites = async (newFavorites: Favorite[]) => {
-        if (!user) return
+        if (!user || !firebaseModulesRef.current || !dbRef.current) return
+        const { setDoc, doc } = firebaseModulesRef.current
         try {
-            await setDoc(doc(db, "users", user.uid), {
+            await setDoc(doc(dbRef.current, "users", user.uid), {
                 email: user.email,
                 displayName: user.displayName,
                 photoURL: user.photoURL,
@@ -291,17 +348,21 @@ function DockyCount() {
     }
 
     const handleSignIn = async () => {
+        if (!firebaseModulesRef.current || !authRef.current) return
+        const { signInWithPopup, GoogleAuthProvider } = firebaseModulesRef.current
         const provider = new GoogleAuthProvider()
         try {
-            await signInWithPopup(auth, provider)
+            await signInWithPopup(authRef.current, provider)
         } catch (error) {
             console.error("Sign in error:", error)
         }
     }
 
     const handleSignOut = async () => {
+        if (!firebaseModulesRef.current || !authRef.current) return
+        const { signOut } = firebaseModulesRef.current
         try {
-            await signOut(auth)
+            await signOut(authRef.current)
         } catch (error) {
             console.error("Sign out error:", error)
         }
