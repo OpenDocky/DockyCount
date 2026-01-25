@@ -411,6 +411,24 @@ function DockyCount() {
                 </div>
             </nav>
 
+            <div className="border-b border-yellow-200/80 bg-yellow-100/70">
+                <div className="max-w-7xl mx-auto px-6 py-2 flex flex-col sm:flex-row items-center justify-center gap-3 text-[11px] font-semibold">
+                    <div className="flex items-center gap-2 text-yellow-900">
+                        <Info className="w-4 h-4 text-yellow-700" />
+                        <span>DockyCount closes on February 15.</span>
+                    </div>
+                    <Button asChild variant="secondary" size="sm" className="rounded-full h-7 px-3 text-[11px]">
+                        <a
+                            href="https://drayko.xyz/news/t2X7K6JgPo2JbozKJYGX"
+                            target="_blank"
+                            rel="noreferrer"
+                        >
+                            Learn more
+                        </a>
+                    </Button>
+                </div>
+            </div>
+
             <div className="max-w-7xl mx-auto px-6 py-8">
                 <div className="grid lg:grid-cols-12 gap-8">
                     {/* Sidebar / Favorites */}
