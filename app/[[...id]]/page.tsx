@@ -411,7 +411,7 @@ function DockyCount() {
                 </div>
             </nav>
 
-            <div className="border-b border-yellow-200/80 bg-green-100/70">
+            <div className="border-b border-green-200/80 bg-green-100/70">
                 <div className="max-w-7xl mx-auto px-6 py-2 flex flex-col sm:flex-row items-center justify-center gap-3 text-[11px] font-semibold">
                     <div className="flex items-center gap-2 text-green-900">
                         <Info className="w-4 h-4 text-green-700" />
