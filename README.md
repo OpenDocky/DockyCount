@@ -41,7 +41,7 @@ Traditional analytics tools are cluttered, slow, and overwhelming. DockyCount gi
 
 ## 📸 Screenshots
 
-![screen dockycount intro](https://github.com/user-attachments/assets/5722b564-9dc6-4fce-91c4-b4813ed6333a)
+![screen dockycount intro](https://github.com/user-attachments/assets/34dc2ca6-0bda-483c-a783-2a4f32963345)
 
 
 ## 🛠️ Built With
