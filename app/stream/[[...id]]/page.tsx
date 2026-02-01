@@ -42,6 +42,46 @@ function getUserValue(user: any[], key: string) {
     return typeof entry?.count === "string" ? entry.count : null
 }
 
+function OdometerCounter({ value, className, ready }: { value: number, className: string, ready: boolean }) {
+    const containerRef = useRef<HTMLDivElement>(null)
+    const instanceRef = useRef<any>(null)
+
+    useEffect(() => {
+        if (!containerRef.current) return
+
+        if (!ready || !(window as any).Odometer) {
+            if (!instanceRef.current) {
+                containerRef.current.textContent = value.toLocaleString()
+            }
+            return
+        }
+
+        if (!instanceRef.current) {
+            containerRef.current.innerHTML = ""
+            const el = document.createElement("div")
+            el.className = "odometer odometer-theme-default"
+            containerRef.current.appendChild(el)
+
+            instanceRef.current = new (window as any).Odometer({
+                el: el,
+                value: value,
+                format: "(,ddd)",
+                theme: "default",
+                duration: 2000,
+            })
+        } else {
+            instanceRef.current.update(value)
+        }
+    }, [value, ready])
+
+    return (
+        <div
+            ref={containerRef}
+            className={className}
+        />
+    )
+}
+
 function StreamView() {
     const params = useParams()
     const router = useRouter()
@@ -273,135 +313,80 @@ function StreamView() {
 
     const unifiedSizeClass = display ? getUnifiedStatSizeClass(display.stats, counterSize) : ""
 
-    // Load Odometer once (script + default theme CSS) to keep digits inline
+    // Load Odometer script and styles once on mount
     useEffect(() => {
-        if (odometerReady) return
         if (typeof window === "undefined") return
 
-        const script = document.createElement("script")
-        script.src = "https://cdn.jsdelivr.net/npm/odometer@0.4.8/odometer.min.js"
-        script.async = true
-        script.onload = () => setOdometerReady(true)
-        document.body.appendChild(script)
-
-        // Inline the official default theme so we are not dependent on CDN timing
-        const inlineStyle = document.createElement("style")
-        inlineStyle.innerHTML = `
-            .odometer, .odometer.odometer-auto-theme, .odometer.odometer-theme-default {
-                display: inline-block;
-                vertical-align: middle;
-                position: relative;
-                white-space: nowrap;
-            }
-            .odometer.odometer-auto-theme .odometer-digit,
-            .odometer.odometer-theme-default .odometer-digit {
-                display: inline-block;
-                vertical-align: middle;
-                position: relative;
-                overflow: hidden;
-            }
-            .odometer.odometer-auto-theme .odometer-digit .odometer-digit-spacer,
-            .odometer.odometer-theme-default .odometer-digit .odometer-digit-spacer {
-                display: inline-block;
-                vertical-align: middle;
-                visibility: hidden;
-            }
-            .odometer.odometer-auto-theme .odometer-digit .odometer-digit-inner,
-            .odometer.odometer-theme-default .odometer-digit .odometer-digit-inner {
-                text-align: left;
-                display: block;
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                height: 100%;
-                overflow: hidden;
-            }
-            .odometer.odometer-auto-theme .odometer-digit .odometer-ribbon,
-            .odometer.odometer-theme-default .odometer-digit .odometer-ribbon {
-                display: block;
-            }
-            .odometer.odometer-auto-theme .odometer-digit .odometer-ribbon-inner,
-            .odometer.odometer-theme-default .odometer-digit .odometer-ribbon-inner {
-                display: block;
-                backface-visibility: hidden;
-            }
-            .odometer.odometer-auto-theme .odometer-digit .odometer-value,
-            .odometer.odometer-theme-default .odometer-digit .odometer-value {
-                display: block;
-                transform: translateZ(0);
-            }
-            .odometer.odometer-auto-theme .odometer-digit .odometer-value.odometer-last-value,
-            .odometer.odometer-theme-default .odometer-digit .odometer-value.odometer-last-value {
-                position: absolute;
-            }
-            .odometer.odometer-auto-theme .odometer-digit .odometer-value.odometer-first-value,
-            .odometer.odometer-theme-default .odometer-digit .odometer-value.odometer-first-value {
-                position: relative;
-            }
-            .odometer.odometer-auto-theme .odometer-radix-mark,
-            .odometer.odometer-theme-default .odometer-radix-mark {
-                vertical-align: middle;
-            }
-            .odometer.odometer-auto-theme .odometer-formatting-mark,
-            .odometer.odometer-theme-default .odometer-formatting-mark {
-                display: inline-block;
-                vertical-align: middle;
-            }
-        `
-        document.head.appendChild(inlineStyle)
-
-        return () => {
-            try { document.body.removeChild(script) } catch { }
-            try { document.head.removeChild(inlineStyle) } catch { }
+        // Check if script already exists to avoid duplicates
+        if ((window as any).Odometer) {
+            setOdometerReady(true)
+        } else {
+            const script = document.createElement("script")
+            script.src = "https://cdn.jsdelivr.net/npm/odometer@0.4.8/odometer.min.js"
+            script.async = true
+            script.onload = () => setOdometerReady(true)
+            document.body.appendChild(script)
         }
-    }, [odometerReady])
 
-    // Update odometer numbers
-    useEffect(() => {
-        if (!display) return
-        display.stats.forEach((stat, index) => {
-            const id = `stream-odometer-${index}`
-            const el = document.getElementById(id)
-            if (!el) return
-            if (odometerReady && (window as any).Odometer) {
-                const existing = (el as any).__odometerInstance as any
-                if (existing) {
-                    existing.update(stat.value)
-                } else {
-                    el.innerHTML = ""
-                    const inst = new (window as any).Odometer({
-                        el,
-                        value: stat.value,
-                        format: "(,ddd)",
-                        theme: "default",
-                        duration: 2000,
-                    })
-                    ;(el as any).__odometerInstance = inst
+        // Always ensure CSS is present and PERSISTENT (do not remove on cleanup used to avoid flicker/race conditions)
+        if (!document.getElementById("odometer-theme")) {
+            const link = document.createElement("link")
+            link.id = "odometer-theme"
+            link.rel = "stylesheet"
+            link.href = "https://cdn.jsdelivr.net/npm/odometer@0.4.8/themes/odometer-theme-default.css"
+            document.head.prepend(link)
+        }
+
+        if (!document.getElementById("odometer-overrides")) {
+            const style = document.createElement("style")
+            style.id = "odometer-overrides"
+            style.innerHTML = `
+                .odometer.odometer-auto-theme, .odometer.odometer-theme-default {
+                    display: inline-block !important;
+                    vertical-align: middle !important;
+                    white-space: nowrap !important;
+                    overflow: visible !important;
                 }
-            } else {
-                el.textContent = stat.value.toLocaleString()
-            }
-        })
-    }, [display, odometerReady])
+                .odometer.odometer-auto-theme .odometer-digit, .odometer.odometer-theme-default .odometer-digit {
+                    display: inline-block !important;
+                    vertical-align: middle !important;
+                }
+            `
+            document.head.appendChild(style)
+        }
+
+        // No cleanup for styles to ensure stability across re-renders/navigation
+        return () => { }
+    }, [])
 
     return (
         <div className={isDark ? "min-h-screen bg-black text-zinc-400" : "min-h-screen bg-background text-foreground"}>
+            <style jsx global>{`
+                .odometer {
+                    display: inline-flex !important;
+                    flex-direction: row !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    vertical-align: middle !important;
+                }
+                .odometer-digit {
+                    display: inline-block !important;
+                    vertical-align: middle !important;
+                }
+            `}</style>
             <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
                 <div className="flex flex-wrap items-center gap-3">
-                        <div className={`flex items-center gap-3 px-3 py-2 rounded-2xl border ${isDark ? "bg-black border-[#111]" : "bg-secondary/50 border-border/50"}`}>
+                    <div className={`flex items-center gap-3 px-3 py-2 rounded-2xl border ${isDark ? "bg-black border-[#111]" : "bg-secondary/50 border-border/50"}`}>
                         <span className={`text-[10px] font-black uppercase tracking-widest ${isDark ? "text-zinc-500" : "text-muted-foreground"}`}>Size</span>
                         <div className={`flex gap-1 p-1 rounded-xl ${isDark ? "bg-black border border-[#111]" : "bg-background/70"}`}>
                             {(["normal", "large", "xl"] as CounterSize[]).map((size) => (
                                 <button
                                     key={size}
                                     onClick={() => setCounterSize(size)}
-                                    className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                                        counterSize === size
-                                            ? isDark ? "bg-white/10 text-zinc-200" : "bg-primary/10 text-primary"
-                                            : isDark ? "text-zinc-500 hover:text-zinc-200" : "text-muted-foreground hover:text-foreground"
-                                    }`}
+                                    className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${counterSize === size
+                                        ? isDark ? "bg-white/10 text-zinc-200" : "bg-primary/10 text-primary"
+                                        : isDark ? "text-zinc-500 hover:text-zinc-200" : "text-muted-foreground hover:text-foreground"
+                                        }`}
                                 >
                                     {size === "normal" ? "S" : size === "large" ? "M" : "L"}
                                 </button>
@@ -496,8 +481,9 @@ function StreamView() {
                                     <div className={`text-[10px] font-black uppercase tracking-widest ${isDark ? "text-zinc-600" : "text-muted-foreground"}`}>
                                         {stat.label}
                                     </div>
-                                    <div
-                                        id={`stream-odometer-${index}`}
+                                    <OdometerCounter
+                                        ready={odometerReady}
+                                        value={stat.value}
                                         className={`${unifiedSizeClass} font-black tabular-nums tracking-tighter leading-none whitespace-nowrap mt-3 ${isDark ? "text-white" : ""}`}
                                     />
                                 </div>
