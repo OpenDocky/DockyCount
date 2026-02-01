@@ -273,7 +273,7 @@ function StreamView() {
 
     const unifiedSizeClass = display ? getUnifiedStatSizeClass(display.stats, counterSize) : ""
 
-    // Load Odometer once
+    // Load Odometer once (script + default theme CSS) to keep digits inline
     useEffect(() => {
         if (odometerReady) return
         if (typeof window === "undefined") return
@@ -284,52 +284,47 @@ function StreamView() {
         script.onload = () => setOdometerReady(true)
         document.body.appendChild(script)
 
+        const css = document.createElement("link")
+        css.rel = "stylesheet"
+        css.href = "https://cdn.jsdelivr.net/npm/odometer@0.4.8/themes/odometer-theme-default.css"
+        document.head.appendChild(css)
+
+        // Hard guarantee that digits stay on a single line even if the CDN theme fails to load
         const style = document.createElement("style")
         style.innerHTML = `
-            .odometer.odometer-auto-theme, .odometer.odometer-theme-default {
-                display: inline-block;
-                vertical-align: middle;
-                position: relative;
+            .odometer {
                 white-space: nowrap !important;
+                display: inline-flex;
+                gap: 0;
                 line-height: 1;
             }
-            .odometer.odometer-auto-theme .odometer-inside, .odometer.odometer-theme-default .odometer-inside {
-                position: relative;
-                display: inline-block;
-            }
-            .odometer.odometer-auto-theme .odometer-digit, .odometer.odometer-theme-default .odometer-digit {
+            .odometer-digit {
                 display: inline-block !important;
-                vertical-align: middle;
                 position: relative;
+                vertical-align: middle;
                 overflow: hidden;
-                height: 1em;
             }
-            .odometer.odometer-auto-theme .odometer-digit .odometer-digit-spacer, .odometer.odometer-theme-default .odometer-digit .odometer-digit-spacer {
+            .odometer-digit .odometer-digit-spacer {
                 display: inline-block !important;
-                vertical-align: middle;
                 visibility: hidden;
             }
-            .odometer.odometer-auto-theme .odometer-digit .odometer-digit-inner, .odometer.odometer-theme-default .odometer-digit .odometer-digit-inner {
+            .odometer-digit .odometer-digit-inner {
                 position: absolute;
                 top: 0;
                 left: 0;
-                display: block;
+                right: 0;
             }
-            .odometer.odometer-auto-theme .odometer-digit .odometer-ribbon, .odometer.odometer-theme-default .odometer-digit .odometer-ribbon {
-                display: block;
-            }
-            .odometer.odometer-auto-theme .odometer-digit .odometer-ribbon-inner, .odometer.odometer-theme-default .odometer-digit .odometer-ribbon-inner {
-                display: block;
-            }
-            .odometer.odometer-auto-theme .odometer-value, .odometer.odometer-theme-default .odometer-value {
-                display: block;
-                line-height: 1;
+            .odometer-digit .odometer-ribbon,
+            .odometer-digit .odometer-ribbon-inner,
+            .odometer-digit .odometer-value {
+                display: inline-block;
             }
         `
         document.head.appendChild(style)
 
         return () => {
             try { document.body.removeChild(script) } catch { }
+            try { document.head.removeChild(css) } catch { }
             try { document.head.removeChild(style) } catch { }
         }
     }, [odometerReady])
@@ -352,7 +347,7 @@ function StreamView() {
                         value: stat.value,
                         format: "(,ddd)",
                         theme: "default",
-                        duration: 500
+                        duration: 2000,
                     })
                     ;(el as any).__odometerInstance = inst
                 }
@@ -465,8 +460,13 @@ function StreamView() {
 
                         <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
                             {display.stats.map((stat, index) => (
-                                <div key={`${stat.label}-${index}`} className={`aura-card p-5 text-center border overflow-hidden ${isDark ? "bg-black border-[#111]" : "border-border/60 bg-card/60"}`}>
-                                    <div className={`text-[10px] font-black uppercase tracking-widest ${isDark ? "text-zinc-600" : "text-muted-foreground"}`}>{stat.label}</div>
+                                <div
+                                    key={`${stat.label}-${index}`}
+                                    className={`p-5 text-center border overflow-hidden rounded-3xl ${isDark ? "bg-black border-[#111]" : "aura-card border-border/60 bg-card/60"}`}
+                                >
+                                    <div className={`text-[10px] font-black uppercase tracking-widest ${isDark ? "text-zinc-600" : "text-muted-foreground"}`}>
+                                        {stat.label}
+                                    </div>
                                     <div
                                         id={`stream-odometer-${index}`}
                                         className={`${unifiedSizeClass} font-black tabular-nums tracking-tighter leading-none whitespace-nowrap mt-3 ${isDark ? "text-white" : ""}`}
