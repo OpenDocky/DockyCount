@@ -45,6 +45,8 @@ function getUserValue(user: any[], key: string) {
 function StreamView() {
     const params = useParams()
     const router = useRouter()
+    const searchParams = useSearchParams()
+    const pathname = usePathname()
 
     const rawSegments = params.id ? (Array.isArray(params.id) ? params.id : [params.id]) : []
     const pathSegments = rawSegments.filter((segment): segment is string => Boolean(segment))
@@ -76,6 +78,7 @@ function StreamView() {
     const contentMode: ContentMode = platform === "youtube" ? (pathMode ?? "channel") : "channel"
     const isVideoMode = contentMode === "video"
     const currentId = pathId
+    const isDark = searchParams.get("theme") === "dark"
 
     const [display, setDisplay] = useState<StreamDisplay | null>(null)
     const [counterSize, setCounterSize] = useState<CounterSize>("normal")
@@ -111,6 +114,17 @@ function StreamView() {
         const basePath = buildBasePath(platform, value)
         const nextPath = currentId ? `${basePath}/${currentId}` : basePath
         router.replace(nextPath)
+    }
+
+    const toggleDarkMode = () => {
+        const params = new URLSearchParams(searchParams.toString())
+        if (isDark) {
+            params.delete("theme")
+        } else {
+            params.set("theme", "dark")
+        }
+        const query = params.toString()
+        router.replace(`${pathname}${query ? `?${query}` : ""}`)
     }
 
     const getResultId = (result: any) => result?.[2] ?? ""
@@ -258,15 +272,24 @@ function StreamView() {
                 vertical-align: middle;
                 position: relative;
                 overflow: hidden;
+                height: 1em;
             }
             .odometer.odometer-auto-theme .odometer-digit .odometer-digit-spacer, .odometer.odometer-theme-default .odometer-digit .odometer-digit-spacer {
                 display: inline-block !important;
                 vertical-align: middle;
                 visibility: hidden;
             }
+            .odometer.odometer-auto-theme .odometer-digit .odometer-digit-inner, .odometer.odometer-theme-default .odometer-digit .odometer-digit-inner {
+                position: absolute;
+                top: 0;
+                left: 0;
+                display: block;
+            }
             .odometer.odometer-auto-theme .odometer-digit .odometer-ribbon, .odometer.odometer-theme-default .odometer-digit .odometer-ribbon {
                 display: block;
-                position: relative;
+            }
+            .odometer.odometer-auto-theme .odometer-digit .odometer-ribbon-inner, .odometer.odometer-theme-default .odometer-digit .odometer-ribbon-inner {
+                display: block;
             }
             .odometer.odometer-auto-theme .odometer-value, .odometer.odometer-theme-default .odometer-value {
                 display: block;
@@ -325,7 +348,7 @@ function StreamView() {
     const unifiedSizeClass = display ? getUnifiedStatSizeClass(display.stats, counterSize) : ""
 
     return (
-        <div className="min-h-screen bg-background text-foreground">
+        <div className={isDark ? "min-h-screen bg-slate-950 text-slate-100" : "min-h-screen bg-background text-foreground"}>
             <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
                 <div className="flex flex-wrap items-center gap-3">
                     <div className="flex items-center gap-3 px-3 py-2 bg-secondary/50 rounded-2xl border border-border/50">
@@ -342,6 +365,12 @@ function StreamView() {
                             ))}
                         </div>
                     </div>
+                    <button
+                        onClick={toggleDarkMode}
+                        className={`px-3 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${isDark ? "bg-white/10 text-white border-white/10" : "bg-secondary/50 text-muted-foreground border-border/50 hover:text-foreground"}`}
+                    >
+                        Dark {isDark ? "On" : "Off"}
+                    </button>
                     <Select value={platform} onValueChange={updatePlatform}>
                         <SelectTrigger className="h-9 rounded-xl border-border/60 bg-background/70 text-xs font-bold uppercase tracking-wide shadow-none">
                             <SelectValue placeholder="Platform" />
