@@ -284,14 +284,53 @@ function StreamView() {
         script.onload = () => setOdometerReady(true)
         document.body.appendChild(script)
 
-        const link = document.createElement("link")
-        link.rel = "stylesheet"
-        link.href = "https://cdn.jsdelivr.net/npm/odometer@0.4.8/themes/odometer-theme-default.css"
-        document.head.prepend(link)
+        const style = document.createElement("style")
+        style.innerHTML = `
+            .odometer.odometer-auto-theme, .odometer.odometer-theme-default {
+                display: inline-block;
+                vertical-align: middle;
+                position: relative;
+                white-space: nowrap !important;
+                line-height: 1;
+            }
+            .odometer.odometer-auto-theme .odometer-inside, .odometer.odometer-theme-default .odometer-inside {
+                position: relative;
+                display: inline-block;
+            }
+            .odometer.odometer-auto-theme .odometer-digit, .odometer.odometer-theme-default .odometer-digit {
+                display: inline-block !important;
+                vertical-align: middle;
+                position: relative;
+                overflow: hidden;
+                height: 1em;
+            }
+            .odometer.odometer-auto-theme .odometer-digit .odometer-digit-spacer, .odometer.odometer-theme-default .odometer-digit .odometer-digit-spacer {
+                display: inline-block !important;
+                vertical-align: middle;
+                visibility: hidden;
+            }
+            .odometer.odometer-auto-theme .odometer-digit .odometer-digit-inner, .odometer.odometer-theme-default .odometer-digit .odometer-digit-inner {
+                position: absolute;
+                top: 0;
+                left: 0;
+                display: block;
+            }
+            .odometer.odometer-auto-theme .odometer-digit .odometer-ribbon, .odometer.odometer-theme-default .odometer-digit .odometer-ribbon {
+                display: block;
+            }
+            .odometer.odometer-auto-theme .odometer-digit .odometer-ribbon-inner, .odometer.odometer-theme-default .odometer-digit .odometer-ribbon-inner {
+                display: block;
+            }
+            .odometer.odometer-auto-theme .odometer-value, .odometer.odometer-theme-default .odometer-value {
+                display: block;
+                line-height: 1;
+            }
+        `
+        document.head.appendChild(style)
 
         return () => {
             try { document.body.removeChild(script) } catch { }
-            try { document.head.removeChild(link) } catch { }
+            try { document.head.removeChild(style) } catch { }
         }
     }, [odometerReady])
 
@@ -307,6 +346,7 @@ function StreamView() {
                 if (existing) {
                     existing.update(stat.value)
                 } else {
+                    el.innerHTML = ""
                     const inst = new (window as any).Odometer({
                         el,
                         value: stat.value,
