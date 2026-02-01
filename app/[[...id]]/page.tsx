@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useRef, Suspense } from "react"
 import { Button } from "@/components/ui/button"
-import { Search, Star, TrendingUp, TrendingDown, Layout, Activity, BarChart3, Globe, ChevronRight, Share2, Info, Copy, Check, Maximize2, Minimize2 } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Search, Star, TrendingUp, TrendingDown, Layout, Activity, BarChart3, Globe, ChevronRight, Share2, Info, Check, Maximize2, Minimize2, Play } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
-import { useSearchParams, useRouter, useParams } from "next/navigation"
+import { useSearchParams, useRouter, useParams, usePathname } from "next/navigation"
 
 interface ChannelData {
     id: string
@@ -16,11 +17,26 @@ interface ChannelData {
     videos: number
 }
 
+interface VideoData {
+    id: string
+    title: string
+    thumbnail: string
+    views: number
+    likes: number
+    comments: number
+    goal: number | null
+    apiViews: number | null
+    uploadedBy?: string
+}
+
 interface Favorite {
     id: string
     name: string
     avatar: string
+    type?: "channel" | "video"
 }
+
+type ContentMode = "channel" | "video"
 
 export const dynamic = "force-dynamic"
 export const runtime = "edge"
@@ -71,17 +87,23 @@ function DockyCount() {
     const [searchResults2, setSearchResults2] = useState<any[]>([])
     const [selectedChannel, setSelectedChannel] = useState<ChannelData | null>(null)
     const [compareChannel, setCompareChannel] = useState<ChannelData | null>(null)
+    const [selectedVideo, setSelectedVideo] = useState<VideoData | null>(null)
+    const [compareVideo, setCompareVideo] = useState<VideoData | null>(null)
     const [favorites, setFavorites] = useState<Favorite[]>([])
     const [isSearching, setIsSearching] = useState(false)
     const [compareMode, setCompareMode] = useState(false)
     const [usageTime, setUsageTime] = useState(0)
     const [isFullscreen, setIsFullscreen] = useState(false)
-    const [subGap, setSubGap] = useState<number | null>(null)
+    const [primaryGap, setPrimaryGap] = useState<number | null>(null)
 
     const searchParams = useSearchParams()
     const router = useRouter()
+    const pathname = usePathname()
     const params = useParams()
     const { toast } = useToast()
+
+    const contentMode: ContentMode = searchParams.get("mode") === "video" ? "video" : "channel"
+    const isVideoMode = contentMode === "video"
 
     const intervalRef = useRef<NodeJS.Timeout | null>(null)
     const compareIntervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -116,6 +138,58 @@ function DockyCount() {
         }
     }
 
+    const parseCount = (value: unknown) => {
+        if (value === null || value === undefined) return null
+        if (typeof value === "number") return Number.isFinite(value) ? value : null
+        if (typeof value === "string") {
+            const normalized = value.replace(/,/g, "")
+            const parsed = Number.parseInt(normalized, 10)
+            return Number.isFinite(parsed) ? parsed : null
+        }
+        return null
+    }
+
+    const getVideoCount = (counts: any[], key: string) => {
+        if (!counts || !Array.isArray(counts)) return null
+        const entry = counts.find((item) => item?.value === key)
+        return parseCount(entry?.count)
+    }
+
+    const getVideoUserValue = (user: any[], key: string) => {
+        if (!user || !Array.isArray(user)) return null
+        const entry = user.find((item) => item?.value === key)
+        return typeof entry?.count === "string" ? entry.count : null
+    }
+
+    const fetchVideoStats = async (videoId: string, isCompare = false) => {
+        try {
+            const response = await fetch(`/api/video-stats/${videoId}`)
+            const data = await response.json()
+            if (data) {
+                const title = getVideoUserValue(data.user, "name") || "Unknown video"
+                const thumbnail = getVideoUserValue(data.user, "pfp") || getVideoUserValue(data.user, "banner") || ""
+                const videoData: VideoData = {
+                    id: videoId,
+                    title,
+                    thumbnail,
+                    views: getVideoCount(data.counts, "views") ?? 0,
+                    likes: getVideoCount(data.counts, "likes") ?? 0,
+                    comments: getVideoCount(data.counts, "comments") ?? 0,
+                    goal: getVideoCount(data.counts, "goal"),
+                    apiViews: getVideoCount(data.counts, "apiviews"),
+                    uploadedBy: typeof data.uploadedBY === "string" ? data.uploadedBY : undefined,
+                }
+                if (isCompare) {
+                    setCompareVideo(videoData)
+                } else {
+                    setSelectedVideo(videoData)
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching video stats:", error)
+        }
+    }
+
     const updateOdometer = (id: string, value: number) => {
         const element = document.getElementById(id)
         if (element && typeof window !== "undefined" && (window as any).Odometer) {
@@ -144,7 +218,8 @@ function DockyCount() {
         }
         setIsSearching(true)
         try {
-            const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`)
+            const endpoint = isVideoMode ? "/api/video-search" : "/api/search"
+            const response = await fetch(`${endpoint}?q=${encodeURIComponent(query)}`)
             const data = await response.json()
             if (data && data.list && data.list.length > 0) {
                 setSearchResults(data.list.slice(0, 5))
@@ -165,7 +240,8 @@ function DockyCount() {
         }
         setIsSearching(true)
         try {
-            const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`)
+            const endpoint = isVideoMode ? "/api/video-search" : "/api/search"
+            const response = await fetch(`${endpoint}?q=${encodeURIComponent(query)}`)
             const data = await response.json()
             if (data && data.list && data.list.length > 0) {
                 setSearchResults2(data.list.slice(0, 5))
@@ -180,37 +256,46 @@ function DockyCount() {
     }
 
     const selectChannel = async (result: any, isCompare = false) => {
-        const channelId = result[2]
+        const itemId = getResultId(result)
+        if (!itemId) return
         if (!isCompare) {
-            router.push(`/${channelId}`)
+            router.push(buildItemUrl(itemId, contentMode))
             setSearchResults([])
             setSearchQuery("")
             return
         }
         if (isCompare) {
             if (compareIntervalRef.current) clearInterval(compareIntervalRef.current)
-            fetchChannelStats(channelId, true)
-            compareIntervalRef.current = setInterval(() => {
-                fetchChannelStats(channelId, true)
-            }, 2000)
+            if (isVideoMode) {
+                fetchVideoStats(itemId, true)
+                compareIntervalRef.current = setInterval(() => {
+                    fetchVideoStats(itemId, true)
+                }, 2000)
+            } else {
+                fetchChannelStats(itemId, true)
+                compareIntervalRef.current = setInterval(() => {
+                    fetchChannelStats(itemId, true)
+                }, 2000)
+            }
         }
         setSearchResults2([])
         setSearchQuery2("")
     }
 
-    const toggleFavorite = (channel: ChannelData) => {
-        const isFavorite = favorites.some((f) => f.id === channel.id)
+    const toggleFavorite = (item: { id: string, name: string, avatar: string }) => {
+        const itemType: ContentMode = contentMode
+        const isFavorite = favorites.some((f) => f.id === item.id && (f.type ?? "channel") === itemType)
         let newFavorites: Favorite[]
         if (isFavorite) {
-            newFavorites = favorites.filter((f) => f.id !== channel.id)
+            newFavorites = favorites.filter((f) => !(f.id === item.id && (f.type ?? "channel") === itemType))
         } else {
-            newFavorites = [...favorites, { id: channel.id, name: channel.name, avatar: channel.avatar }]
+            newFavorites = [...favorites, { id: item.id, name: item.name, avatar: item.avatar, type: itemType }]
         }
         setFavorites(newFavorites)
         localStorage.setItem("dockycount_favorites", JSON.stringify(newFavorites))
         toast({
             title: isFavorite ? "Removed from Favorites" : "Added to Favorites",
-            description: isFavorite ? `${channel.name} removed` : `${channel.name} saved`,
+            description: isFavorite ? `${item.name} removed` : `${item.name} saved`,
         })
     }
 
@@ -242,6 +327,37 @@ function DockyCount() {
         return `${minutes}m ${secs}s`
     }
 
+    const buildItemUrl = (id: string, mode: ContentMode) => {
+        const params = new URLSearchParams()
+        if (mode === "video") params.set("mode", "video")
+        const query = params.toString()
+        return `/${id}${query ? `?${query}` : ""}`
+    }
+
+    const updateContentMode = (mode: ContentMode) => {
+        const params = new URLSearchParams(searchParams.toString())
+        if (mode === "video") {
+            params.set("mode", "video")
+        } else {
+            params.delete("mode")
+        }
+        params.delete("compare")
+        const query = params.toString()
+        router.replace(`${pathname}${query ? `?${query}` : ""}`)
+    }
+
+    const getResultId = (result: any) => result?.[2] ?? ""
+    const getResultTitle = (result: any) => result?.[0] ?? ""
+    const getResultSubtitle = (result: any) => {
+        if (isVideoMode) return result?.[2] ? `ID: ${result[2]}` : "Video"
+        return result?.[1] ?? ""
+    }
+    const getResultImage = (result: any) => {
+        if (isVideoMode) return result?.[1] ?? ""
+        return result?.[3] ?? ""
+    }
+    const isFavoriteItem = (id: string) => favorites.some((fav) => fav.id === id && (fav.type ?? "channel") === contentMode)
+
     // --- useEffects (AFTER function definitions) ---
 
     useEffect(() => {
@@ -263,22 +379,56 @@ function DockyCount() {
 
         return () => {
             if (usageIntervalRef.current) clearInterval(usageIntervalRef.current)
+            if (intervalRef.current) clearInterval(intervalRef.current)
+            if (compareIntervalRef.current) clearInterval(compareIntervalRef.current)
         }
     }, [])
 
     useEffect(() => {
+        if (intervalRef.current) clearInterval(intervalRef.current)
+        if (compareIntervalRef.current) clearInterval(compareIntervalRef.current)
+        setSelectedChannel(null)
+        setCompareChannel(null)
+        setSelectedVideo(null)
+        setCompareVideo(null)
+        setPrimaryGap(null)
+        setSearchResults([])
+        setSearchResults2([])
+        setSearchQuery("")
+        setSearchQuery2("")
+    }, [contentMode])
+
+    useEffect(() => {
         const idFromPath = params.id ? (Array.isArray(params.id) ? params.id[0] : params.id) : null
         const idFromSearch = searchParams.get("id")
-        const channelId = idFromPath || idFromSearch
+        const itemId = idFromPath || idFromSearch
 
-        if (channelId && typeof channelId === "string" && channelId.startsWith("UC")) {
-            if (intervalRef.current) clearInterval(intervalRef.current)
-            fetchChannelStats(channelId, false)
+        if (!itemId || typeof itemId !== "string") return
+
+        if (intervalRef.current) clearInterval(intervalRef.current)
+
+        if (isVideoMode) {
+            if (itemId.startsWith("UC")) {
+                setSelectedVideo(null)
+                return
+            }
+            fetchVideoStats(itemId, false)
             intervalRef.current = setInterval(() => {
-                fetchChannelStats(channelId, false)
+                fetchVideoStats(itemId, false)
             }, 2000)
+            return
         }
-    }, [params.id, searchParams])
+
+        if (!itemId.startsWith("UC")) {
+            setSelectedChannel(null)
+            return
+        }
+
+        fetchChannelStats(itemId, false)
+        intervalRef.current = setInterval(() => {
+            fetchChannelStats(itemId, false)
+        }, 2000)
+    }, [params.id, searchParams, isVideoMode])
 
     useEffect(() => {
         if (typeof window !== "undefined" && !odometerLoadedRef.current) {
@@ -326,48 +476,86 @@ function DockyCount() {
     }, [])
 
     useEffect(() => {
-        if (selectedChannel) {
+        if (isVideoMode && selectedVideo) {
             // Small delay to ensure DOM is ready if switching modes
+            setTimeout(() => {
+                updateOdometer("main-subscribers", selectedVideo.views)
+                updateOdometer("main-views", selectedVideo.likes)
+                updateOdometer("main-videos", selectedVideo.comments)
+            }, 50)
+        }
+        if (!isVideoMode && selectedChannel) {
             setTimeout(() => {
                 updateOdometer("main-subscribers", selectedChannel.subscribers)
                 updateOdometer("main-views", selectedChannel.views)
                 updateOdometer("main-videos", selectedChannel.videos)
             }, 50)
         }
-    }, [selectedChannel, compareMode])
+    }, [selectedChannel, selectedVideo, compareMode, isVideoMode])
 
     useEffect(() => {
-        if (compareChannel) {
+        if (isVideoMode && compareVideo) {
+            setTimeout(() => {
+                updateOdometer("compare-subscribers", compareVideo.views)
+                updateOdometer("compare-views", compareVideo.likes)
+                updateOdometer("compare-videos", compareVideo.comments)
+            }, 50)
+        }
+        if (!isVideoMode && compareChannel) {
             setTimeout(() => {
                 updateOdometer("compare-subscribers", compareChannel.subscribers)
                 updateOdometer("compare-views", compareChannel.views)
                 updateOdometer("compare-videos", compareChannel.videos)
             }, 50)
         }
-    }, [compareChannel, compareMode])
+    }, [compareChannel, compareVideo, compareMode, isVideoMode])
 
     useEffect(() => {
-        if (selectedChannel && compareChannel) {
-            const diff = Math.abs(selectedChannel.subscribers - compareChannel.subscribers)
-            setSubGap(selectedChannel.subscribers - compareChannel.subscribers)
+        const primaryMain = isVideoMode ? selectedVideo?.views : selectedChannel?.subscribers
+        const primaryCompare = isVideoMode ? compareVideo?.views : compareChannel?.subscribers
+
+        if (primaryMain !== undefined && primaryMain !== null && primaryCompare !== undefined && primaryCompare !== null) {
+            const diff = Math.abs(primaryMain - primaryCompare)
+            setPrimaryGap(primaryMain - primaryCompare)
             setTimeout(() => {
                 updateOdometer("gap-difference", diff)
             }, 50)
         } else {
-            setSubGap(null)
+            setPrimaryGap(null)
         }
-    }, [selectedChannel, compareChannel])
+    }, [selectedChannel, compareChannel, selectedVideo, compareVideo, isVideoMode])
 
     useEffect(() => {
         const compareId = searchParams.get("compare")
-        if (compareId && !compareMode) {
+        if (!compareId) return
+        if (isVideoMode && compareId.startsWith("UC")) return
+        if (!isVideoMode && !compareId.startsWith("UC")) return
+        if (!compareMode) {
             setCompareMode(true)
+        }
+        if (compareIntervalRef.current) clearInterval(compareIntervalRef.current)
+        if (isVideoMode) {
+            fetchVideoStats(compareId, true)
+            compareIntervalRef.current = setInterval(() => {
+                fetchVideoStats(compareId, true)
+            }, 2000)
+        } else {
             fetchChannelStats(compareId, true)
             compareIntervalRef.current = setInterval(() => {
                 fetchChannelStats(compareId, true)
             }, 2000)
         }
-    }, [searchParams])
+    }, [searchParams, compareMode, isVideoMode])
+
+    useEffect(() => {
+        if (!compareMode && compareIntervalRef.current) {
+            clearInterval(compareIntervalRef.current)
+            compareIntervalRef.current = null
+            setCompareChannel(null)
+            setCompareVideo(null)
+            setPrimaryGap(null)
+        }
+    }, [compareMode])
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -383,6 +571,60 @@ function DockyCount() {
         return () => clearTimeout(timer)
     }, [searchQuery2])
 
+    const visibleFavorites = favorites.filter((fav) => (fav.type ?? "channel") === contentMode)
+    const selectedDisplay = isVideoMode
+        ? (selectedVideo
+            ? {
+                id: selectedVideo.id,
+                name: selectedVideo.title,
+                avatar: selectedVideo.thumbnail,
+                primary: selectedVideo.views,
+                secondaryA: selectedVideo.likes,
+                secondaryB: selectedVideo.comments,
+                meta: selectedVideo.uploadedBy,
+            }
+            : null)
+        : (selectedChannel
+            ? {
+                id: selectedChannel.id,
+                name: selectedChannel.name,
+                avatar: selectedChannel.avatar,
+                primary: selectedChannel.subscribers,
+                secondaryA: selectedChannel.views,
+                secondaryB: selectedChannel.videos,
+                meta: null,
+            }
+            : null)
+
+    const compareDisplay = isVideoMode
+        ? (compareVideo
+            ? {
+                id: compareVideo.id,
+                name: compareVideo.title,
+                avatar: compareVideo.thumbnail,
+                primary: compareVideo.views,
+                secondaryA: compareVideo.likes,
+                secondaryB: compareVideo.comments,
+                meta: compareVideo.uploadedBy,
+            }
+            : null)
+        : (compareChannel
+            ? {
+                id: compareChannel.id,
+                name: compareChannel.name,
+                avatar: compareChannel.avatar,
+                primary: compareChannel.subscribers,
+                secondaryA: compareChannel.views,
+                secondaryB: compareChannel.videos,
+                meta: null,
+            }
+            : null)
+
+    const primaryLabel = isVideoMode ? "Total Views" : "Total Subscribers"
+    const secondaryLabelA = isVideoMode ? "Likes" : "Total Views"
+    const secondaryLabelB = isVideoMode ? "Comments" : "Videos"
+    const gapLabel = isVideoMode ? "View Difference" : "Subscriber Difference"
+    const emptyStateLabel = isVideoMode ? "video" : "channel"
 
     if (!mounted) return null
 
@@ -439,10 +681,10 @@ function DockyCount() {
                                     <Star className="w-3.5 h-3.5 text-primary fill-primary/20" />
                                     Favorites
                                 </h3>
-                                <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">{favorites.length}</span>
+                                <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">{visibleFavorites.length}</span>
                             </div>
                             <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
-                                {favorites.length === 0 ? (
+                                {visibleFavorites.length === 0 ? (
                                     <div className="text-center py-8 text-muted-foreground/40 border border-dashed border-border/50 rounded-xl">
                                         <div className="w-10 h-10 bg-secondary/50 rounded-xl flex items-center justify-center mx-auto mb-2">
                                             <Globe className="w-5 h-5 opacity-50" />
@@ -450,10 +692,10 @@ function DockyCount() {
                                         <p className="text-[10px] font-bold uppercase tracking-wide">Empty List</p>
                                     </div>
                                 ) : (
-                                    favorites.map((fav) => (
+                                    visibleFavorites.map((fav) => (
                                         <button
                                             key={fav.id}
-                                            onClick={() => router.push(`/${fav.id}`)}
+                                            onClick={() => router.push(buildItemUrl(fav.id, (fav.type ?? "channel") as ContentMode))}
                                             className="w-full flex items-center gap-3 p-2 hover:bg-secondary/80 rounded-xl transition-all group"
                                         >
                                             <img src={fav.avatar} alt={fav.name} className="w-8 h-8 rounded-lg shadow-sm" />
@@ -486,21 +728,48 @@ function DockyCount() {
                     <main className="lg:col-span-9 space-y-8 order-1 lg:order-2">
                         {/* Search & Mode Toggle */}
                         <div className="aura-card p-6 bg-card/80 backdrop-blur-xl border border-border/50 shadow-2xl shadow-primary/5 relative z-50">
-                            <div className="flex gap-2 mb-6 p-1 bg-secondary/50 rounded-2xl w-fit">
-                                <button
-                                    onClick={() => setCompareMode(false)}
-                                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${!compareMode ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-                                >
-                                    <Layout className="w-3.5 h-3.5 inline-block mr-2 mb-0.5" />
-                                    Single View
-                                </button>
-                                <button
-                                    onClick={() => setCompareMode(true)}
-                                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${compareMode ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-                                >
-                                    <BarChart3 className="w-3.5 h-3.5 inline-block mr-2 mb-0.5" />
-                                    Compare
-                                </button>
+                            <div className="flex flex-wrap gap-3 mb-6">
+                                <div className="flex items-center gap-3 px-3 py-2 bg-secondary/50 rounded-2xl border border-border/50 w-fit">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Mode</span>
+                                    <Select value={contentMode} onValueChange={(value) => updateContentMode(value as ContentMode)}>
+                                    <SelectTrigger className="h-9 rounded-xl border-border/60 bg-background/70 text-xs font-bold uppercase tracking-wide shadow-none">
+                                        <span className="flex items-center gap-2">
+                                            {isVideoMode ? <Play className="w-3.5 h-3.5" /> : <Globe className="w-3.5 h-3.5" />}
+                                            <SelectValue placeholder="Select mode" />
+                                        </span>
+                                    </SelectTrigger>
+                                        <SelectContent className="rounded-2xl border-border/80 bg-background/95 backdrop-blur-xl p-1">
+                                            <SelectItem
+                                                value="channel"
+                                                className="rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-wide data-[highlighted]:bg-secondary/70 data-[highlighted]:text-foreground data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary"
+                                            >
+                                                Channels
+                                            </SelectItem>
+                                            <SelectItem
+                                                value="video"
+                                                className="rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-wide data-[highlighted]:bg-secondary/70 data-[highlighted]:text-foreground data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary"
+                                            >
+                                                Videos
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="flex gap-2 p-1 bg-secondary/50 rounded-2xl w-fit">
+                                    <button
+                                        onClick={() => setCompareMode(false)}
+                                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${!compareMode ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                                    >
+                                        <Layout className="w-3.5 h-3.5 inline-block mr-2 mb-0.5" />
+                                        Single View
+                                    </button>
+                                    <button
+                                        onClick={() => setCompareMode(true)}
+                                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${compareMode ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                                    >
+                                        <BarChart3 className="w-3.5 h-3.5 inline-block mr-2 mb-0.5" />
+                                        Compare
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="relative">
@@ -510,7 +779,7 @@ function DockyCount() {
                                         <input
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
-                                            placeholder="Search YouTube channel..."
+                                            placeholder={isVideoMode ? "Search YouTube video..." : "Search YouTube channel..."}
                                             className="aura-input !pl-14 h-14 text-base w-full bg-secondary/30 hover:bg-secondary/50 focus:bg-background transition-all"
                                         />
                                     </div>
@@ -521,7 +790,7 @@ function DockyCount() {
                                             <input
                                                 value={searchQuery}
                                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                                placeholder="Channel 1..."
+                                                placeholder={isVideoMode ? "Video 1..." : "Channel 1..."}
                                                 className="aura-input !pl-12 h-12 text-sm w-full bg-secondary/30 hover:bg-secondary/50 focus:bg-background transition-all"
                                             />
                                         </div>
@@ -530,7 +799,7 @@ function DockyCount() {
                                             <input
                                                 value={searchQuery2}
                                                 onChange={(e) => setSearchQuery2(e.target.value)}
-                                                placeholder="Channel 2..."
+                                                placeholder={isVideoMode ? "Video 2..." : "Channel 2..."}
                                                 className="aura-input !pl-12 h-12 text-sm w-full bg-secondary/30 hover:bg-secondary/50 focus:bg-background transition-all"
                                             />
                                         </div>
@@ -542,28 +811,28 @@ function DockyCount() {
                                     <div className="absolute top-[calc(100%+0.5rem)] left-0 right-0 z-[100] rounded-2xl shadow-2xl p-2 bg-background/95 backdrop-blur-xl border border-border/80 animate-in fade-in slide-in-from-top-2">
                                         {searchResults.map((result, index) => (
                                             <button
-                                                key={`s1-${index}`}
+                                                key={`s1-${getResultId(result) || index}`}
                                                 onClick={() => selectChannel(result, false)}
                                                 className="w-full flex items-center gap-4 p-3 hover:bg-secondary rounded-xl text-left transition-colors group"
                                             >
-                                                <img src={result[3]} className="w-10 h-10 rounded-lg object-cover shadow-sm group-hover:scale-105 transition-transform" />
+                                                <img src={getResultImage(result)} className="w-10 h-10 rounded-lg object-cover shadow-sm group-hover:scale-105 transition-transform" />
                                                 <div className="flex-1 overflow-hidden">
-                                                    <div className="font-bold text-sm truncate">{result[0]}</div>
-                                                    <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">{result[1]}</div>
+                                                    <div className="font-bold text-sm truncate">{getResultTitle(result)}</div>
+                                                    <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">{getResultSubtitle(result)}</div>
                                                 </div>
                                             </button>
                                         ))}
                                         {compareMode && searchResults2.length > 0 && <div className="h-px bg-border my-2" />}
                                         {compareMode && searchResults2.map((result, index) => (
                                             <button
-                                                key={`s2-${index}`}
+                                                key={`s2-${getResultId(result) || index}`}
                                                 onClick={() => selectChannel(result, true)}
                                                 className="w-full flex items-center gap-4 p-3 hover:bg-secondary rounded-xl text-left transition-colors group"
                                             >
-                                                <img src={result[3]} className="w-10 h-10 rounded-lg object-cover shadow-sm group-hover:scale-105 transition-transform border border-primary/20" />
+                                                <img src={getResultImage(result)} className="w-10 h-10 rounded-lg object-cover shadow-sm group-hover:scale-105 transition-transform border border-primary/20" />
                                                 <div className="flex-1 overflow-hidden">
-                                                    <div className="font-bold text-sm truncate text-primary">{result[0]}</div>
-                                                    <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">{result[1]}</div>
+                                                    <div className="font-bold text-sm truncate text-primary">{getResultTitle(result)}</div>
+                                                    <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">{getResultSubtitle(result)}</div>
                                                 </div>
                                             </button>
                                         ))}
@@ -573,9 +842,9 @@ function DockyCount() {
                         </div>
 
                         {/* Stats Display */}
-                        {selectedChannel ? (
+                        {selectedDisplay ? (
                             <div className="space-y-8">
-                                <div className={`grid ${compareMode && compareChannel ? "md:grid-cols-2" : "grid-cols-1"} gap-6`}>
+                                <div className={`grid ${compareMode && compareDisplay ? "md:grid-cols-2" : "grid-cols-1"} gap-6`}>
 
                                     {/* Channel 1 */}
                                     <div className="aura-card p-8 flex flex-col items-center text-center relative overflow-hidden group hover:border-primary/30 transition-all duration-500">
@@ -583,19 +852,29 @@ function DockyCount() {
 
                                         <div className="relative mb-6">
                                             <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full opacity-0 group-hover:opacity-50 transition-opacity duration-700" />
-                                            <img src={selectedChannel.avatar} className="w-32 h-32 rounded-3xl relative z-10 shadow-2xl border-4 border-background group-hover:scale-105 transition-transform duration-500" />
+                                            <img src={selectedDisplay.avatar} className="w-32 h-32 rounded-3xl relative z-10 shadow-2xl border-4 border-background group-hover:scale-105 transition-transform duration-500" />
                                             <div className="absolute -bottom-3 -right-3 bg-red-600 text-white text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-widest shadow-lg z-20 animate-pulse">
                                                 Live
                                             </div>
                                         </div>
 
-                                        <h2 className="text-3xl font-black mb-1 leading-tight">{selectedChannel.name}</h2>
-                                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-6">{selectedChannel.id}</p>
+                                        <h2 className="text-3xl font-black mb-1 leading-tight">{selectedDisplay.name}</h2>
+                                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">{selectedDisplay.id}</p>
+                                        {selectedDisplay.meta ? (
+                                            <p className="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest mb-6">Uploaded by {selectedDisplay.meta}</p>
+                                        ) : (
+                                            <div className="mb-6" />
+                                        )}
 
                                         <div className="flex gap-3 mb-8">
-                                            <Button variant="outline" size="sm" onClick={() => toggleFavorite(selectedChannel)} className="rounded-full h-8 px-4 text-xs font-bold gap-2">
-                                                <Star className={`w-3.5 h-3.5 ${favorites.some(f => f.id === selectedChannel.id) ? 'fill-yellow-500 text-yellow-500' : ''}`} />
-                                                {favorites.some(f => f.id === selectedChannel.id) ? 'Saved' : 'Save'}
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => toggleFavorite({ id: selectedDisplay.id, name: selectedDisplay.name, avatar: selectedDisplay.avatar })}
+                                                className="rounded-full h-8 px-4 text-xs font-bold gap-2"
+                                            >
+                                                <Star className={`w-3.5 h-3.5 ${isFavoriteItem(selectedDisplay.id) ? 'fill-yellow-500 text-yellow-500' : ''}`} />
+                                                {isFavoriteItem(selectedDisplay.id) ? 'Saved' : 'Save'}
                                             </Button>
                                             <Button variant="outline" size="sm" onClick={copyToClipboard} className="rounded-full h-8 w-8 p-0">
                                                 <Share2 className="w-3.5 h-3.5" />
@@ -605,64 +884,74 @@ function DockyCount() {
                                         <div className="w-full py-8 bg-secondary/20 rounded-3xl border border-border/50 mb-6 relative overflow-hidden">
                                             <div className="absolute inset-0 bg-grid-white/5 mask-image-b" />
                                             <div className="relative z-10">
-                                                <div className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] mb-2">Total Subscribers</div>
+                                                <div className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] mb-2">{primaryLabel}</div>
                                                 <div id="main-subscribers" key={`main-subscribers-${compareMode}`} className={`font-black tabular-nums tracking-tighter leading-none whitespace-nowrap ${compareMode ? 'text-5xl lg:text-6xl' : 'text-7xl lg:text-8xl'}`}>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <MilestoneTracker current={selectedChannel.subscribers} goal={getNextMilestone(selectedChannel.subscribers)} />
+                                        <MilestoneTracker current={selectedDisplay.primary} goal={getNextMilestone(selectedDisplay.primary)} />
 
                                         <div className="grid grid-cols-2 w-full gap-4 mt-8 pt-8 border-t border-border/50">
                                             <div>
-                                                <div className="text-[9px] font-black uppercase text-muted-foreground tracking-widest mb-1">Total Views</div>
+                                                <div className="text-[9px] font-black uppercase text-muted-foreground tracking-widest mb-1">{secondaryLabelA}</div>
                                                 <div id="main-views" key={`main-views-${compareMode}`} className="text-2xl font-bold tabular-nums whitespace-nowrap"></div>
                                             </div>
                                             <div>
-                                                <div className="text-[9px] font-black uppercase text-muted-foreground tracking-widest mb-1">Videos</div>
+                                                <div className="text-[9px] font-black uppercase text-muted-foreground tracking-widest mb-1">{secondaryLabelB}</div>
                                                 <div id="main-videos" key={`main-videos-${compareMode}`} className="text-2xl font-bold tabular-nums whitespace-nowrap"></div>
                                             </div>
                                         </div>
                                     </div>
 
                                     {/* Channel 2 */}
-                                    {compareMode && compareChannel && (
+                                    {compareMode && compareDisplay && (
                                         <div className="aura-card p-8 flex flex-col items-center text-center relative overflow-hidden group hover:border-primary/30 transition-all duration-500">
                                             <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
 
                                             <div className="relative mb-6">
                                                 <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full opacity-0 group-hover:opacity-50 transition-opacity duration-700" />
-                                                <img src={compareChannel.avatar} className="w-32 h-32 rounded-3xl relative z-10 shadow-2xl border-4 border-background group-hover:scale-105 transition-transform duration-500" />
+                                                <img src={compareDisplay.avatar} className="w-32 h-32 rounded-3xl relative z-10 shadow-2xl border-4 border-background group-hover:scale-105 transition-transform duration-500" />
                                             </div>
 
-                                            <h2 className="text-3xl font-black mb-1 leading-tight">{compareChannel.name}</h2>
-                                            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-6">{compareChannel.id}</p>
+                                            <h2 className="text-3xl font-black mb-1 leading-tight">{compareDisplay.name}</h2>
+                                            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">{compareDisplay.id}</p>
+                                            {compareDisplay.meta ? (
+                                                <p className="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest mb-6">Uploaded by {compareDisplay.meta}</p>
+                                            ) : (
+                                                <div className="mb-6" />
+                                            )}
 
                                             <div className="flex gap-3 mb-8">
-                                                <Button variant="outline" size="sm" onClick={() => toggleFavorite(compareChannel)} className="rounded-full h-8 px-4 text-xs font-bold gap-2">
-                                                    <Star className={`w-3.5 h-3.5 ${favorites.some(f => f.id === compareChannel.id) ? 'fill-yellow-500 text-yellow-500' : ''}`} />
-                                                    {favorites.some(f => f.id === compareChannel.id) ? 'Saved' : 'Save'}
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => toggleFavorite({ id: compareDisplay.id, name: compareDisplay.name, avatar: compareDisplay.avatar })}
+                                                    className="rounded-full h-8 px-4 text-xs font-bold gap-2"
+                                                >
+                                                    <Star className={`w-3.5 h-3.5 ${isFavoriteItem(compareDisplay.id) ? 'fill-yellow-500 text-yellow-500' : ''}`} />
+                                                    {isFavoriteItem(compareDisplay.id) ? 'Saved' : 'Save'}
                                                 </Button>
                                             </div>
 
                                             <div className="w-full py-8 bg-secondary/20 rounded-3xl border border-border/50 mb-6 relative overflow-hidden">
                                                 <div className="absolute inset-0 bg-grid-white/5 mask-image-b" />
                                                 <div className="relative z-10">
-                                                    <div className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] mb-2">Total Subscribers</div>
+                                                    <div className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] mb-2">{primaryLabel}</div>
                                                     <div id="compare-subscribers" key="compare-subscribers" className="text-5xl lg:text-6xl font-black tabular-nums tracking-tighter leading-none text-primary whitespace-nowrap">
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <MilestoneTracker current={compareChannel.subscribers} goal={getNextMilestone(compareChannel.subscribers)} />
+                                            <MilestoneTracker current={compareDisplay.primary} goal={getNextMilestone(compareDisplay.primary)} />
 
                                             <div className="grid grid-cols-2 w-full gap-4 mt-8 pt-8 border-t border-border/50">
                                                 <div>
-                                                    <div className="text-[9px] font-black uppercase text-muted-foreground tracking-widest mb-1">Total Views</div>
+                                                    <div className="text-[9px] font-black uppercase text-muted-foreground tracking-widest mb-1">{secondaryLabelA}</div>
                                                     <div id="compare-views" className="text-2xl font-bold tabular-nums whitespace-nowrap"></div>
                                                 </div>
                                                 <div>
-                                                    <div className="text-[9px] font-black uppercase text-muted-foreground tracking-widest mb-1">Videos</div>
+                                                    <div className="text-[9px] font-black uppercase text-muted-foreground tracking-widest mb-1">{secondaryLabelB}</div>
                                                     <div id="compare-videos" className="text-2xl font-bold tabular-nums whitespace-nowrap"></div>
                                                 </div>
                                             </div>
@@ -671,7 +960,7 @@ function DockyCount() {
                                 </div>
 
                                 {/* Comparison Analytics Header */}
-                                {compareMode && selectedChannel && compareChannel && subGap !== null && (
+                                {compareMode && selectedDisplay && compareDisplay && primaryGap !== null && (
                                     <div className="aura-card p-8 bg-gradient-to-br from-card to-secondary/20 border-primary/10 animate-in fade-in slide-in-from-bottom-4">
                                         <div className="flex items-center justify-center gap-2 mb-6 opacity-50">
                                             <Activity className="w-4 h-4" />
@@ -680,13 +969,13 @@ function DockyCount() {
 
                                         <div className="flex flex-col md:flex-row items-center justify-around gap-8">
                                             <div className="text-center">
-                                                <div className="text-[10px] font-bold uppercase text-muted-foreground mb-2">Subscriber Difference</div>
+                                                <div className="text-[10px] font-bold uppercase text-muted-foreground mb-2">{gapLabel}</div>
                                                 <div className="text-5xl md:text-6xl font-black tracking-tighter tabular-nums flex items-center justify-center gap-3 whitespace-nowrap">
-                                                    {subGap > 0 ? <TrendingUp className="w-8 h-8 text-green-500" /> : <TrendingDown className="w-8 h-8 text-red-500" />}
+                                                    {primaryGap > 0 ? <TrendingUp className="w-8 h-8 text-green-500" /> : <TrendingDown className="w-8 h-8 text-red-500" />}
                                                     <div id="gap-difference"></div>
                                                 </div>
                                                 <div className="mt-2 text-xs font-bold bg-primary/10 text-primary py-1 px-3 rounded-full inline-block">
-                                                    {subGap > 0 ? `${selectedChannel.name} leads` : `${compareChannel.name} leads`}
+                                                    {primaryGap > 0 ? `${selectedDisplay.name} leads` : `${compareDisplay.name} leads`}
                                                 </div>
                                             </div>
                                         </div>
@@ -702,7 +991,7 @@ function DockyCount() {
                                 </div>
                                 <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-4">Start Monitoring</h2>
                                 <p className="text-muted-foreground max-w-md mx-auto mb-8 text-lg">
-                                    Search for any YouTube channel above to see real-time statistics, future projections, and detailed comparisons.
+                                    Search for any YouTube {emptyStateLabel} above to see real-time statistics, future projections, and detailed comparisons.
                                 </p>
                                 <div className="flex gap-2">
                                     <div className="h-2 w-2 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]" />
