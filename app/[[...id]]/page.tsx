@@ -103,6 +103,7 @@ function DockyCount() {
     const { toast } = useToast()
 
     const contentMode: ContentMode = searchParams.get("mode") === "video" ? "video" : "channel"
+    const platform = searchParams.get("platform") || "youtube"
     const isVideoMode = contentMode === "video"
 
     const intervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -330,6 +331,7 @@ function DockyCount() {
     const buildItemUrl = (id: string, mode: ContentMode) => {
         const params = new URLSearchParams()
         if (mode === "video") params.set("mode", "video")
+        if (platform !== "youtube") params.set("platform", platform)
         const query = params.toString()
         return `/${id}${query ? `?${query}` : ""}`
     }
@@ -340,6 +342,18 @@ function DockyCount() {
             params.set("mode", "video")
         } else {
             params.delete("mode")
+        }
+        params.delete("compare")
+        const query = params.toString()
+        router.replace(`${pathname}${query ? `?${query}` : ""}`)
+    }
+
+    const updatePlatform = (value: string) => {
+        const params = new URLSearchParams(searchParams.toString())
+        if (value && value !== "youtube") {
+            params.set("platform", value)
+        } else {
+            params.delete("platform")
         }
         params.delete("compare")
         const query = params.toString()
@@ -396,7 +410,7 @@ function DockyCount() {
         setSearchResults2([])
         setSearchQuery("")
         setSearchQuery2("")
-    }, [contentMode])
+    }, [contentMode, platform])
 
     useEffect(() => {
         const idFromPath = params.id ? (Array.isArray(params.id) ? params.id[0] : params.id) : null
@@ -730,14 +744,51 @@ function DockyCount() {
                         <div className="aura-card p-6 bg-card/80 backdrop-blur-xl border border-border/50 shadow-2xl shadow-primary/5 relative z-50">
                             <div className="flex flex-wrap gap-3 mb-6">
                                 <div className="flex items-center gap-3 px-3 py-2 bg-secondary/50 rounded-2xl border border-border/50 w-fit">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Platform</span>
+                                    <Select value={platform} onValueChange={updatePlatform}>
+                                        <SelectTrigger className="h-9 rounded-xl border-border/60 bg-background/70 text-xs font-bold uppercase tracking-wide shadow-none">
+                                            <SelectValue placeholder="Select platform" />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-2xl border-border/80 bg-background/95 backdrop-blur-xl p-1">
+                                            <SelectItem
+                                                value="youtube"
+                                                className="rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-wide data-[highlighted]:bg-secondary/70 data-[highlighted]:text-foreground data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary"
+                                            >
+                                                YouTube
+                                            </SelectItem>
+                                            <SelectItem
+                                                value="twitch"
+                                                disabled
+                                                className="rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-wide data-[highlighted]:bg-secondary/70 data-[highlighted]:text-foreground data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary"
+                                            >
+                                                Twitch (soon)
+                                            </SelectItem>
+                                            <SelectItem
+                                                value="tiktok"
+                                                disabled
+                                                className="rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-wide data-[highlighted]:bg-secondary/70 data-[highlighted]:text-foreground data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary"
+                                            >
+                                                TikTok (soon)
+                                            </SelectItem>
+                                            <SelectItem
+                                                value="kick"
+                                                disabled
+                                                className="rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-wide data-[highlighted]:bg-secondary/70 data-[highlighted]:text-foreground data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary"
+                                            >
+                                                Kick (soon)
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="flex items-center gap-3 px-3 py-2 bg-secondary/50 rounded-2xl border border-border/50 w-fit">
                                     <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Mode</span>
                                     <Select value={contentMode} onValueChange={(value) => updateContentMode(value as ContentMode)}>
-                                    <SelectTrigger className="h-9 rounded-xl border-border/60 bg-background/70 text-xs font-bold uppercase tracking-wide shadow-none">
-                                        <span className="flex items-center gap-2">
-                                            {isVideoMode ? <Play className="w-3.5 h-3.5" /> : <Globe className="w-3.5 h-3.5" />}
-                                            <SelectValue placeholder="Select mode" />
-                                        </span>
-                                    </SelectTrigger>
+                                        <SelectTrigger className="h-9 rounded-xl border-border/60 bg-background/70 text-xs font-bold uppercase tracking-wide shadow-none">
+                                            <span className="flex items-center gap-2">
+                                                {isVideoMode ? <Play className="w-3.5 h-3.5" /> : <Globe className="w-3.5 h-3.5" />}
+                                                <SelectValue placeholder="Select mode" />
+                                            </span>
+                                        </SelectTrigger>
                                         <SelectContent className="rounded-2xl border-border/80 bg-background/95 backdrop-blur-xl p-1">
                                             <SelectItem
                                                 value="channel"
