@@ -4,7 +4,7 @@
 
 **Track your YouTube and TikTok stats in real-time with a beautiful, modern interface**
 
-[🚀 Live Demo](https://dockycount.drayko.xyz) • [📸 Screenshots](#screenshots) • [🗺️ Roadmap](#roadmap)
+[🚀 Live Demo](https://dockycount.drayko.xyz) • [📸 Screenshots](#screenshots) • [🗺️ Roadmap](https://github.com/OpenDocky/DockyCount/tree/main?tab=readme-ov-file#%EF%B8%8F-roadmap)
 
 ![Version](https://img.shields.io/badge/version-19.0-blue)
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?logo=typescript&logoColor=white)
