@@ -688,7 +688,7 @@ function DockyCount() {
             <div className="max-w-7xl mx-auto px-6 py-8">
                 <div className="grid lg:grid-cols-12 gap-8">
                     {/* Sidebar / Favorites */}
-                    <aside className="lg:col-span-3 space-y-6 order-2 lg:order-1">
+                    <aside className="lg:col-span-3 space-y-6 order-2 lg:order-1 relative z-20">
                         <div className="aura-card p-5 bg-card/50 backdrop-blur-sm border border-border/50">
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
@@ -741,7 +741,7 @@ function DockyCount() {
                     {/* Main Content */}
                     <main className="lg:col-span-9 space-y-8 order-1 lg:order-2">
                         {/* Search & Mode Toggle */}
-                        <div className="aura-card p-6 bg-card/80 backdrop-blur-xl border border-border/50 shadow-2xl shadow-primary/5 relative z-50">
+                        <div className="aura-card p-6 bg-card/80 backdrop-blur-xl border border-border/50 shadow-2xl shadow-primary/5 relative z-10">
                             <div className="flex flex-wrap gap-3 mb-6">
                                 <div className="flex items-center gap-3 px-3 py-2 bg-secondary/50 rounded-2xl border border-border/50 w-fit">
                                     <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Platform</span>
@@ -859,7 +859,7 @@ function DockyCount() {
 
                                 {/* Search Dropdown */}
                                 {(searchResults.length > 0 || (compareMode && searchResults2.length > 0)) && (
-                                    <div className="absolute top-[calc(100%+0.5rem)] left-0 right-0 z-[100] rounded-2xl shadow-2xl p-2 bg-background/95 backdrop-blur-xl border border-border/80 animate-in fade-in slide-in-from-top-2">
+                                    <div className="absolute top-[calc(100%+0.5rem)] left-0 right-0 z-20 rounded-2xl shadow-2xl p-2 bg-background/95 backdrop-blur-xl border border-border/80 animate-in fade-in slide-in-from-top-2">
                                         {searchResults.map((result, index) => (
                                             <button
                                                 key={`s1-${getResultId(result) || index}`}
