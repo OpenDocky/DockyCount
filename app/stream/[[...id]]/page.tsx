@@ -284,48 +284,77 @@ function StreamView() {
         script.onload = () => setOdometerReady(true)
         document.body.appendChild(script)
 
-        const css = document.createElement("link")
-        css.rel = "stylesheet"
-        css.href = "https://cdn.jsdelivr.net/npm/odometer@0.4.8/themes/odometer-theme-default.css"
-        document.head.appendChild(css)
-
-        // Hard guarantee that digits stay on a single line even if the CDN theme fails to load
-        const style = document.createElement("style")
-        style.innerHTML = `
-            .odometer {
-                white-space: nowrap !important;
-                display: inline-flex;
-                gap: 0;
-                line-height: 1;
-            }
-            .odometer-digit {
-                display: inline-block !important;
-                position: relative;
+        // Inline the official default theme so we are not dependent on CDN timing
+        const inlineStyle = document.createElement("style")
+        inlineStyle.innerHTML = `
+            .odometer, .odometer.odometer-auto-theme, .odometer.odometer-theme-default {
+                display: inline-block;
                 vertical-align: middle;
+                position: relative;
+                white-space: nowrap;
+            }
+            .odometer.odometer-auto-theme .odometer-digit,
+            .odometer.odometer-theme-default .odometer-digit {
+                display: inline-block;
+                vertical-align: middle;
+                position: relative;
                 overflow: hidden;
             }
-            .odometer-digit .odometer-digit-spacer {
-                display: inline-block !important;
+            .odometer.odometer-auto-theme .odometer-digit .odometer-digit-spacer,
+            .odometer.odometer-theme-default .odometer-digit .odometer-digit-spacer {
+                display: inline-block;
+                vertical-align: middle;
                 visibility: hidden;
             }
-            .odometer-digit .odometer-digit-inner {
+            .odometer.odometer-auto-theme .odometer-digit .odometer-digit-inner,
+            .odometer.odometer-theme-default .odometer-digit .odometer-digit-inner {
+                text-align: left;
+                display: block;
                 position: absolute;
                 top: 0;
                 left: 0;
                 right: 0;
+                bottom: 0;
+                height: 100%;
+                overflow: hidden;
             }
-            .odometer-digit .odometer-ribbon,
-            .odometer-digit .odometer-ribbon-inner,
-            .odometer-digit .odometer-value {
+            .odometer.odometer-auto-theme .odometer-digit .odometer-ribbon,
+            .odometer.odometer-theme-default .odometer-digit .odometer-ribbon {
+                display: block;
+            }
+            .odometer.odometer-auto-theme .odometer-digit .odometer-ribbon-inner,
+            .odometer.odometer-theme-default .odometer-digit .odometer-ribbon-inner {
+                display: block;
+                backface-visibility: hidden;
+            }
+            .odometer.odometer-auto-theme .odometer-digit .odometer-value,
+            .odometer.odometer-theme-default .odometer-digit .odometer-value {
+                display: block;
+                transform: translateZ(0);
+            }
+            .odometer.odometer-auto-theme .odometer-digit .odometer-value.odometer-last-value,
+            .odometer.odometer-theme-default .odometer-digit .odometer-value.odometer-last-value {
+                position: absolute;
+            }
+            .odometer.odometer-auto-theme .odometer-digit .odometer-value.odometer-first-value,
+            .odometer.odometer-theme-default .odometer-digit .odometer-value.odometer-first-value {
+                position: relative;
+            }
+            .odometer.odometer-auto-theme .odometer-radix-mark,
+            .odometer.odometer-theme-default .odometer-radix-mark {
+                vertical-align: middle;
+            }
+            .odometer.odometer-auto-theme .odometer-formatting-mark,
+            .odometer.odometer-theme-default .odometer-formatting-mark {
                 display: inline-block;
+                vertical-align: middle;
             }
         `
-        document.head.appendChild(style)
+        document.head.appendChild(inlineStyle)
 
         return () => {
             try { document.body.removeChild(script) } catch { }
-            try { document.head.removeChild(css) } catch { }
-            try { document.head.removeChild(style) } catch { }
+            try { document.head.removeChild(inlineStyle) } catch { }
         }
     }, [odometerReady])
 
