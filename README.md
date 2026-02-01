@@ -112,6 +112,7 @@ If you find DockyCount useful, please consider giving it a star! It helps the pr
 
 
 **Built with ❤️ by [Drayko](https://drayko.xyz)**
+
 Part of the [OpenDocky](https://github.com/OpenDocky) suite of tools
 
 [Website](https://drayko.xyz) • [GitHub](https://github.com/GraphStats)
