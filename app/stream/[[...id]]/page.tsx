@@ -84,10 +84,9 @@ function StreamView() {
     const [counterSize, setCounterSize] = useState<CounterSize>("normal")
     const [searchQuery, setSearchQuery] = useState("")
     const [searchResults, setSearchResults] = useState<any[]>([])
+    const [odometerReady, setOdometerReady] = useState(false)
 
     const intervalRef = useRef<NodeJS.Timeout | null>(null)
-    const odometerLoadedRef = useRef(false)
-    const odometerRefs = useRef<{ [key: string]: any }>({})
 
     const buildBasePath = (targetPlatform: string, targetMode: ContentMode) => {
         if (targetPlatform === "youtube") {
@@ -244,84 +243,11 @@ function StreamView() {
     }, [currentId, platform, isVideoMode])
 
     useEffect(() => {
-        if (typeof window !== "undefined" && !odometerLoadedRef.current) {
-            const script = document.createElement("script")
-            script.src = "https://cdn.jsdelivr.net/npm/odometer@0.4.8/odometer.min.js"
-            script.async = true
-            document.body.appendChild(script)
-
-            const link = document.createElement("link")
-            link.rel = "stylesheet"
-            link.href = "https://cdn.jsdelivr.net/npm/odometer@0.4.8/themes/odometer-theme-default.css"
-            document.head.prepend(link)
-
-            odometerLoadedRef.current = true
-        }
-
-        const style = document.createElement("style")
-        style.innerHTML = `
-            .odometer.odometer-auto-theme, .odometer.odometer-theme-default {
-                display: inline-block;
-                vertical-align: middle;
-                position: relative;
-                white-space: nowrap !important;
-                line-height: 1;
-            }
-            .odometer.odometer-auto-theme .odometer-digit, .odometer.odometer-theme-default .odometer-digit {
-                display: inline-block !important;
-                vertical-align: middle;
-                position: relative;
-                overflow: hidden;
-                height: 1em;
-            }
-            .odometer.odometer-auto-theme .odometer-digit .odometer-digit-spacer, .odometer.odometer-theme-default .odometer-digit .odometer-digit-spacer {
-                display: inline-block !important;
-                vertical-align: middle;
-                visibility: hidden;
-            }
-            .odometer.odometer-auto-theme .odometer-digit .odometer-digit-inner, .odometer.odometer-theme-default .odometer-digit .odometer-digit-inner {
-                position: absolute;
-                top: 0;
-                left: 0;
-                display: block;
-            }
-            .odometer.odometer-auto-theme .odometer-digit .odometer-ribbon, .odometer.odometer-theme-default .odometer-digit .odometer-ribbon {
-                display: block;
-            }
-            .odometer.odometer-auto-theme .odometer-digit .odometer-ribbon-inner, .odometer.odometer-theme-default .odometer-digit .odometer-ribbon-inner {
-                display: block;
-            }
-            .odometer.odometer-auto-theme .odometer-value, .odometer.odometer-theme-default .odometer-value {
-                display: block;
-                line-height: 1;
-            }
-        `
-        document.head.appendChild(style)
-        return () => {
-            try { document.head.removeChild(style) } catch { }
-        }
-    }, [])
-
-    useEffect(() => {
         if (!display) return
         display.stats.forEach((stat, index) => {
             const id = `stream-odometer-${index}`
             const element = document.getElementById(id)
-            if (!element || typeof window === "undefined" || !(window as any).Odometer) {
-                if (element) element.textContent = stat.value.toLocaleString()
-                return
-            }
-            if (!odometerRefs.current[id] || odometerRefs.current[id].el !== element) {
-                odometerRefs.current[id] = new (window as any).Odometer({
-                    el: element,
-                    value: stat.value,
-                    format: "(,ddd)",
-                    theme: "default",
-                    duration: 500
-                })
-            } else {
-                odometerRefs.current[id].update(stat.value)
-            }
+            if (element) element.textContent = stat.value.toLocaleString()
         })
     }, [display])
 
@@ -347,18 +273,71 @@ function StreamView() {
 
     const unifiedSizeClass = display ? getUnifiedStatSizeClass(display.stats, counterSize) : ""
 
+    // Load Odometer once
+    useEffect(() => {
+        if (odometerReady) return
+        if (typeof window === "undefined") return
+
+        const script = document.createElement("script")
+        script.src = "https://cdn.jsdelivr.net/npm/odometer@0.4.8/odometer.min.js"
+        script.async = true
+        script.onload = () => setOdometerReady(true)
+        document.body.appendChild(script)
+
+        const link = document.createElement("link")
+        link.rel = "stylesheet"
+        link.href = "https://cdn.jsdelivr.net/npm/odometer@0.4.8/themes/odometer-theme-default.css"
+        document.head.prepend(link)
+
+        return () => {
+            try { document.body.removeChild(script) } catch { }
+            try { document.head.removeChild(link) } catch { }
+        }
+    }, [odometerReady])
+
+    // Update odometer numbers
+    useEffect(() => {
+        if (!display) return
+        display.stats.forEach((stat, index) => {
+            const id = `stream-odometer-${index}`
+            const el = document.getElementById(id)
+            if (!el) return
+            if (odometerReady && (window as any).Odometer) {
+                const existing = (el as any).__odometerInstance as any
+                if (existing) {
+                    existing.update(stat.value)
+                } else {
+                    const inst = new (window as any).Odometer({
+                        el,
+                        value: stat.value,
+                        format: "(,ddd)",
+                        theme: "default",
+                        duration: 500
+                    })
+                    ;(el as any).__odometerInstance = inst
+                }
+            } else {
+                el.textContent = stat.value.toLocaleString()
+            }
+        })
+    }, [display, odometerReady])
+
     return (
-        <div className={isDark ? "min-h-screen bg-slate-950 text-slate-100" : "min-h-screen bg-background text-foreground"}>
+        <div className={isDark ? "min-h-screen bg-black text-zinc-400" : "min-h-screen bg-background text-foreground"}>
             <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
                 <div className="flex flex-wrap items-center gap-3">
-                    <div className="flex items-center gap-3 px-3 py-2 bg-secondary/50 rounded-2xl border border-border/50">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Size</span>
-                        <div className="flex gap-1 p-1 bg-background/70 rounded-xl">
+                        <div className={`flex items-center gap-3 px-3 py-2 rounded-2xl border ${isDark ? "bg-black border-[#111]" : "bg-secondary/50 border-border/50"}`}>
+                        <span className={`text-[10px] font-black uppercase tracking-widest ${isDark ? "text-zinc-500" : "text-muted-foreground"}`}>Size</span>
+                        <div className={`flex gap-1 p-1 rounded-xl ${isDark ? "bg-black border border-[#111]" : "bg-background/70"}`}>
                             {(["normal", "large", "xl"] as CounterSize[]).map((size) => (
                                 <button
                                     key={size}
                                     onClick={() => setCounterSize(size)}
-                                    className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${counterSize === size ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                                    className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                                        counterSize === size
+                                            ? isDark ? "bg-white/10 text-zinc-200" : "bg-primary/10 text-primary"
+                                            : isDark ? "text-zinc-500 hover:text-zinc-200" : "text-muted-foreground hover:text-foreground"
+                                    }`}
                                 >
                                     {size === "normal" ? "S" : size === "large" ? "M" : "L"}
                                 </button>
@@ -367,15 +346,15 @@ function StreamView() {
                     </div>
                     <button
                         onClick={toggleDarkMode}
-                        className={`px-3 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${isDark ? "bg-white/10 text-white border-white/10" : "bg-secondary/50 text-muted-foreground border-border/50 hover:text-foreground"}`}
+                        className={`px-3 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${isDark ? "bg-black text-zinc-300 border-[#111]" : "bg-secondary/50 text-muted-foreground border-border/50 hover:text-foreground"}`}
                     >
                         Dark {isDark ? "On" : "Off"}
                     </button>
                     <Select value={platform} onValueChange={updatePlatform}>
-                        <SelectTrigger className="h-9 rounded-xl border-border/60 bg-background/70 text-xs font-bold uppercase tracking-wide shadow-none">
+                        <SelectTrigger className={`h-9 rounded-xl text-xs font-bold uppercase tracking-wide shadow-none ${isDark ? "border-[#111] bg-black text-zinc-200" : "border-border/60 bg-background/70"}`}>
                             <SelectValue placeholder="Platform" />
                         </SelectTrigger>
-                        <SelectContent className="rounded-2xl border-border/80 bg-background/95 backdrop-blur-xl p-1">
+                        <SelectContent className={`rounded-2xl p-1 ${isDark ? "border-[#111] bg-black text-zinc-200" : "border-border/80 bg-background/95 backdrop-blur-xl"}`}>
                             <SelectItem value="youtube" className="rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-wide data-[highlighted]:bg-secondary/70 data-[highlighted]:text-foreground data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary">
                                 YouTube
                             </SelectItem>
@@ -387,10 +366,10 @@ function StreamView() {
 
                     {platform === "youtube" && (
                         <Select value={contentMode} onValueChange={(value) => updateMode(value as ContentMode)}>
-                            <SelectTrigger className="h-9 rounded-xl border-border/60 bg-background/70 text-xs font-bold uppercase tracking-wide shadow-none">
+                            <SelectTrigger className={`h-9 rounded-xl text-xs font-bold uppercase tracking-wide shadow-none ${isDark ? "border-[#111] bg-black text-zinc-200" : "border-border/60 bg-background/70"}`}>
                                 <SelectValue placeholder="Mode" />
                             </SelectTrigger>
-                            <SelectContent className="rounded-2xl border-border/80 bg-background/95 backdrop-blur-xl p-1">
+                            <SelectContent className={`rounded-2xl p-1 ${isDark ? "border-[#111] bg-black text-zinc-200" : "border-border/80 bg-background/95 backdrop-blur-xl"}`}>
                                 <SelectItem value="channel" className="rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-wide data-[highlighted]:bg-secondary/70 data-[highlighted]:text-foreground data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary">
                                     Channel
                                 </SelectItem>
@@ -407,7 +386,7 @@ function StreamView() {
                             value={searchQuery}
                             onChange={(event) => setSearchQuery(event.target.value)}
                             placeholder={platform === "tiktok" ? "Search TikTok account..." : (isVideoMode ? "Search YouTube video..." : "Search YouTube channel...")}
-                            className="aura-input !pl-9 h-10 text-sm w-full bg-secondary/30 hover:bg-secondary/50 focus:bg-background transition-all"
+                            className={`aura-input !pl-9 h-10 text-sm w-full transition-all ${isDark ? "bg-black border-[#111] text-zinc-200 placeholder:text-zinc-600 hover:bg-black focus:bg-black" : "bg-secondary/30 hover:bg-secondary/50 focus:bg-background"}`}
                         />
                         {searchResults.length > 0 && (
                             <div className="absolute top-[calc(100%+0.5rem)] left-0 right-0 z-20 rounded-2xl shadow-2xl p-2 bg-background/95 backdrop-blur-xl border border-border/80">
@@ -439,18 +418,18 @@ function StreamView() {
                                 <img src={display.avatar} alt={display.name} className="w-14 h-14 rounded-2xl shadow-lg border border-border/60" />
                             )}
                             <div>
-                                <div className="text-3xl font-black tracking-tight">{display.name}</div>
-                                <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{display.id}</div>
+                                <div className={`text-3xl font-black tracking-tight ${isDark ? "text-zinc-300" : ""}`}>{display.name}</div>
+                                <div className={`text-xs font-bold uppercase tracking-widest ${isDark ? "text-zinc-600" : "text-muted-foreground"}`}>{display.id}</div>
                             </div>
                         </div>
 
                         <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
                             {display.stats.map((stat, index) => (
-                                <div key={`${stat.label}-${index}`} className="aura-card p-5 text-center border border-border/60 bg-card/60 overflow-hidden">
-                                    <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{stat.label}</div>
+                                <div key={`${stat.label}-${index}`} className={`aura-card p-5 text-center border overflow-hidden ${isDark ? "bg-black border-[#111]" : "border-border/60 bg-card/60"}`}>
+                                    <div className={`text-[10px] font-black uppercase tracking-widest ${isDark ? "text-zinc-600" : "text-muted-foreground"}`}>{stat.label}</div>
                                     <div
                                         id={`stream-odometer-${index}`}
-                                        className={`${unifiedSizeClass} font-black tabular-nums tracking-tighter leading-none mt-3`}
+                                        className={`${unifiedSizeClass} font-black tabular-nums tracking-tighter leading-none whitespace-nowrap mt-3 ${isDark ? "text-white" : ""}`}
                                     />
                                 </div>
                             ))}
