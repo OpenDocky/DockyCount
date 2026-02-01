@@ -52,7 +52,7 @@ export default function LiveSearchPage() {
                     {results.map((channel: any) => (
                         <div
                             key={channel[2]}
-                            onClick={() => router.push(`/${channel[2]}`)}
+                            onClick={() => router.push(`/youtube/channel/${channel[2]}`)}
                             className="aura-card p-4 flex items-center gap-4 cursor-pointer hover:border-primary/50 hover:bg-secondary/50 transition-all group"
                         >
                             <img src={channel[3]} alt={channel[0]} className="w-16 h-16 rounded-2xl shadow-sm group-hover:scale-105 transition-transform" />

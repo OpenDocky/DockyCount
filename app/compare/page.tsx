@@ -39,7 +39,7 @@ export default function ComparePage() {
             // I will make this a standalone setup page that, for now, is just a UI playground 
             // or I can implement the full comparison logic here too.
             // Let's implement the full logic here for a premium experience.
-            router.push(`/${c1[2]}?compare=${c2[2]}`)
+            router.push(`/youtube/channel/${c1[2]}?compare=${c2[2]}`)
         }
     }
 

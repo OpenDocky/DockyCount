@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, Star, TrendingUp, TrendingDown, Layout, Activity, BarChart3, Globe, ChevronRight, Share2, Info, Check, Maximize2, Minimize2, Play } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
-import { useSearchParams, useRouter, useParams, usePathname } from "next/navigation"
+import { useSearchParams, useRouter, useParams } from "next/navigation"
 
 interface ChannelData {
     id: string
@@ -111,15 +111,42 @@ function DockyCount() {
 
     const searchParams = useSearchParams()
     const router = useRouter()
-    const pathname = usePathname()
     const params = useParams()
     const { toast } = useToast()
 
-    const platform = searchParams.get("platform") || "youtube"
-    const rawMode: ContentMode = searchParams.get("mode") === "video" ? "video" : "channel"
+    const rawSegments = params.id ? (Array.isArray(params.id) ? params.id : [params.id]) : []
+    const pathSegments = rawSegments.filter((segment): segment is string => Boolean(segment))
+
+    let pathPlatform: string | null = null
+    let pathMode: ContentMode | null = null
+    let pathId: string | null = null
+
+    if (pathSegments.length > 0) {
+        if (pathSegments[0] === "youtube") {
+            pathPlatform = "youtube"
+            if (pathSegments[1] === "channel" || pathSegments[1] === "video") {
+                pathMode = pathSegments[1] === "video" ? "video" : "channel"
+                pathId = pathSegments[2] ?? null
+            } else {
+                pathMode = "channel"
+                pathId = pathSegments[1] ?? null
+            }
+        } else if (pathSegments[0] === "tiktok") {
+            pathPlatform = "tiktok"
+            pathMode = "channel"
+            pathId = pathSegments[1] ?? null
+        } else {
+            pathId = pathSegments[0] ?? null
+        }
+    }
+
+    const platform = pathPlatform ?? searchParams.get("platform") ?? "youtube"
+    const rawModeFromQuery: ContentMode = searchParams.get("mode") === "video" ? "video" : "channel"
+    const rawMode: ContentMode = pathMode ?? rawModeFromQuery
     const contentMode: ContentMode = platform === "youtube" ? rawMode : "channel"
     const isVideoMode = contentMode === "video"
     const isTikTok = platform === "tiktok"
+    const currentItemId = pathId || searchParams.get("id")
 
     const intervalRef = useRef<NodeJS.Timeout | null>(null)
     const compareIntervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -377,39 +404,47 @@ function DockyCount() {
 
     const buildItemUrl = (id: string, mode: ContentMode, overridePlatform?: string) => {
         const resolvedPlatform = overridePlatform ?? platform
-        const params = new URLSearchParams()
-        if (mode === "video") params.set("mode", "video")
-        if (resolvedPlatform !== "youtube") params.set("platform", resolvedPlatform)
-        const query = params.toString()
-        return `/${id}${query ? `?${query}` : ""}`
+        if (resolvedPlatform === "youtube") {
+            return mode === "video" ? `/youtube/video/${id}` : `/youtube/channel/${id}`
+        }
+        return `/${resolvedPlatform}/${id}`
+    }
+
+    const buildBasePath = (targetPlatform: string, targetMode: ContentMode) => {
+        if (targetPlatform === "youtube") {
+            return targetMode === "video" ? "/youtube/video" : "/youtube/channel"
+        }
+        return `/${targetPlatform}`
     }
 
     const updateContentMode = (mode: ContentMode) => {
         if (platform !== "youtube" && mode === "video") return
-        const params = new URLSearchParams(searchParams.toString())
-        if (mode === "video") {
-            params.set("mode", "video")
-        } else {
-            params.delete("mode")
+        const nextMode = platform === "youtube" ? mode : "channel"
+        const basePath = buildBasePath(platform, nextMode)
+        let nextId: string | null = currentItemId
+        if (nextMode === "video" && nextId?.startsWith("UC")) {
+            nextId = null
         }
-        params.delete("compare")
-        const query = params.toString()
-        router.replace(`${pathname}${query ? `?${query}` : ""}`)
+        if (nextMode === "channel" && nextId && !nextId.startsWith("UC")) {
+            nextId = null
+        }
+        const nextPath = nextId ? `${basePath}/${nextId}` : basePath
+        router.replace(nextPath)
     }
 
     const updatePlatform = (value: string) => {
-        const params = new URLSearchParams(searchParams.toString())
-        if (value && value !== "youtube") {
-            params.set("platform", value)
-        } else {
-            params.delete("platform")
+        const nextPlatform = value || "youtube"
+        const nextMode = nextPlatform === "youtube" ? contentMode : "channel"
+        const basePath = buildBasePath(nextPlatform, nextMode)
+        let nextId: string | null = currentItemId
+        if (nextPlatform !== "youtube" && nextId?.startsWith("UC")) {
+            nextId = null
         }
-        if (value && value !== "youtube") {
-            params.delete("mode")
+        if (nextPlatform === "youtube" && nextMode === "channel" && nextId && !nextId.startsWith("UC")) {
+            nextId = null
         }
-        params.delete("compare")
-        const query = params.toString()
-        router.replace(`${pathname}${query ? `?${query}` : ""}`)
+        const nextPath = nextId ? `${basePath}/${nextId}` : basePath
+        router.replace(nextPath)
     }
 
     const getResultId = (result: any) => result?.[2] ?? ""
@@ -469,14 +504,10 @@ function DockyCount() {
         setSearchQuery2("")
     }, [contentMode, platform])
 
-    useEffect(() => {
-        if (platform !== "youtube" && searchParams.get("mode") === "video") {
-            updateContentMode("channel")
-        }
-    }, [platform, searchParams])
+    // Intentionally no URL normalization here; path-based routing controls mode/platform.
 
     useEffect(() => {
-        const idFromPath = params.id ? (Array.isArray(params.id) ? params.id[0] : params.id) : null
+        const idFromPath = pathId
         const idFromSearch = searchParams.get("id")
         const itemId = idFromPath || idFromSearch
 
@@ -485,10 +516,6 @@ function DockyCount() {
         if (intervalRef.current) clearInterval(intervalRef.current)
 
         if (platform === "tiktok") {
-            if (itemId.startsWith("UC")) {
-                setSelectedTikTok(null)
-                return
-            }
             fetchTikTokStats(itemId, false)
             intervalRef.current = setInterval(() => {
                 fetchTikTokStats(itemId, false)
@@ -635,7 +662,6 @@ function DockyCount() {
     useEffect(() => {
         const compareId = searchParams.get("compare")
         if (!compareId) return
-        if (platform === "tiktok" && compareId.startsWith("UC")) return
         if (isVideoMode && compareId.startsWith("UC")) return
         if (!isVideoMode && platform === "youtube" && !compareId.startsWith("UC")) return
         if (!compareMode) {
