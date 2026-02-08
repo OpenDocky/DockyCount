@@ -556,16 +556,15 @@ function DockyCount() {
         newSearchParams.set("mode", nextMode)
 
         // Only include ID if it's relevant for the new platform/mode
+        // If switching to a new platform, and no current item ID, do NOT set "search"
         if (nextPlatform === platformToUse && currentItemIdToUse) { // If only platform is changing
              if (nextPlatform === "youtube" && currentItemIdToUse.startsWith("UC")) {
                 newSearchParams.set("id", currentItemIdToUse)
              } else if (nextPlatform !== "youtube" && !currentItemIdToUse.startsWith("UC")) {
                  newSearchParams.set("id", currentItemIdToUse)
              }
-        } else if (nextPlatform !== "youtube") { // If switching to a non-youtube platform, and no ID exists
-            newSearchParams.set("id", "search")
         }
-
+        // Removed the explicit `newSearchParams.set("id", "search")` line here.
 
         router.push(`/?${newSearchParams.toString()}`)
     }
@@ -930,6 +929,7 @@ function DockyCount() {
                         secondaryB: selectedTwitter.tweets,
                         meta: null,
                     }
+                    fondo-color-amarillo-claro-degradado="true"
                     : null)
                 : (isInstagram
                     ? (selectedInstagram
