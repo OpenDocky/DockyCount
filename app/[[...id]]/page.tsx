@@ -167,17 +167,7 @@ function DockyCount() {
         }
     }
 
-    const [platform, setPlatform] = useState(() => {
-        const initialPathPlatform = pathPlatform || searchParams.get("platform") || "youtube"
-        return initialPathPlatform
-    })
-
-    useEffect(() => {
-        const platformFromUrl = pathPlatform || searchParams.get("platform") || "youtube"
-        if (platformFromUrl !== platform) {
-            setPlatform(platformFromUrl)
-        }
-    }, [params, searchParams])
+    const platform = pathPlatform || searchParams.get("platform") || "youtube"
     const rawModeFromQuery: ContentMode = searchParams.get("mode") === "video" ? "video" : "channel"
     const rawMode: ContentMode = pathMode ?? rawModeFromQuery
     const contentMode: ContentMode = platform === "youtube" ? rawMode : "channel"
@@ -541,7 +531,6 @@ function DockyCount() {
 
     const updatePlatform = (value: string) => {
         const nextPlatform = value || "youtube"
-        setPlatform(nextPlatform)
         
         const nextMode = nextPlatform === "youtube" ? contentMode : "channel"
         const basePath = buildBasePath(nextPlatform, nextMode)
@@ -554,9 +543,6 @@ function DockyCount() {
             if (!nextId) { // Ensure there's always an ID for non-YouTube platforms
                 nextId = "search" // Use a default ID if none exists
             }
-        } else if (nextPlatform === "youtube" && nextMode === "channel" && nextId && !nextId.startsWith("UC")) {
-            // Clear non-YouTube IDs when moving to YouTube channel mode
-            nextId = null
         }
 
         const nextPath = nextId ? `${basePath}/${nextId}` : basePath
@@ -800,7 +786,7 @@ function DockyCount() {
         if (!isVideoMode && !isTikTok && !isTwitter && !isInstagram && compareChannel) {
             setTimeout(() => {
                 updateOdometer("compare-subscribers", compareChannel.subscribers)
-                updateOdometer("compare-views", compareChannel.likes)
+                updateOdometer("compare-views", compareChannel.views)
                 updateOdometer("compare-videos", compareChannel.videos)
             }, 50)
         }
@@ -984,7 +970,7 @@ function DockyCount() {
                         name: compareTwitter.name,
                         avatar: compareTwitter.avatar,
                         primary: compareTwitter.followers,
-                        secondaryA: compareTwitter.likes,
+                        secondaryA: selectedTwitter.likes,
                         secondaryB: compareTwitter.tweets,
                         meta: null,
                     }
@@ -1096,7 +1082,7 @@ function DockyCount() {
                                             onClick={() => router.push(buildItemUrl(fav.id, (fav.type ?? "channel") as ContentMode, fav.platform ?? "youtube"))}
                                             className="w-full flex items-center gap-3 p-2 hover:bg-secondary/80 rounded-xl transition-all group"
                                         >
-                                            <img src={fav.avatar} className="w-8 h-8 rounded-lg object-cover shadow-sm" />
+                                            <img src={fav.avatar} alt={fav.name} className="w-8 h-8 rounded-lg object-cover shadow-sm" />
                                             <div className="flex-1 text-left overflow-hidden">
                                                 <div className="font-bold text-sm truncate group-hover:text-primary transition-colors">{fav.name}</div>
                                             </div>
@@ -1404,7 +1390,7 @@ function DockyCount() {
                                         <div className="flex flex-col md:flex-row items-center justify-around gap-8">
                                             <div className="text-center">
                                                 <div className="text-[10px] font-bold uppercase text-muted-foreground mb-2">{gapLabel}</div>
-                                                <div className="text-5xl md:text-6xl font-black tabular-nums tracking-tighter leading-none whitespace-nowrap">
+                                                <div className="text-5xl md:text-6xl font-black tracking-tighter tabular-nums flex items-center justify-center gap-3 whitespace-nowrap">
                                                     {primaryGap > 0 ? <TrendingUp className="w-8 h-8 text-green-500" /> : <TrendingDown className="w-8 h-8 text-red-500" />}
                                                     <div id="gap-difference"></div>
                                                 </div>
