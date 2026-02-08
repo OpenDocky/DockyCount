@@ -602,7 +602,7 @@ function DockyCount() {
     }, [])
 
     useEffect(() => {
-        if (intervalRef.current) clearInterval(intervalRef.current)
+        if (intervalRef.current) clearInterval(intervalRefRef.current)
         if (compareIntervalRef.current) clearInterval(compareIntervalRef.current)
         setSelectedChannel(null)
         setCompareChannel(null)
@@ -1093,7 +1093,7 @@ function DockyCount() {
                                         >
                                             <img src={fav.avatar} alt={fav.name} className="w-8 h-8 rounded-lg shadow-sm" />
                                             <div className="flex-1 text-left overflow-hidden">
-                                                <div className="text-xs font-bold truncate group-hover:text-primary transition-colors">{fav.name}</div>
+                                                <div className="font-bold text-sm truncate group-hover:text-primary transition-colors">{fav.name}</div>
                                             </div>
                                             <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/30 group-hover:text-primary/50" />
                                         </button>
@@ -1176,8 +1176,8 @@ function DockyCount() {
                                                 <SelectItem
                                                     value="video"
                                                     className="rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-wide data-[highlighted]:bg-secondary/70 data-[highlighted]:text-foreground data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary"
-                                                >
-                                                    Videos
+                                            >
+                                                Videos
                                                 </SelectItem>
                                             )}
                                         </SelectContent>
@@ -1399,7 +1399,7 @@ function DockyCount() {
                                         <div className="flex flex-col md:flex-row items-center justify-around gap-8">
                                             <div className="text-center">
                                                 <div className="text-[10px] font-bold uppercase text-muted-foreground mb-2">{gapLabel}</div>
-                                                <div className="text-5xl md:text-6xl font-black tracking-tighter tabular-nums flex items-center justify-center gap-3 whitespace-nowrap">
+                                                <div className="text-5xl md:text-6xl font-black tabular-nums tracking-tighter leading-none whitespace-nowrap">
                                                     {primaryGap > 0 ? <TrendingUp className="w-8 h-8 text-green-500" /> : <TrendingDown className="w-8 h-8 text-red-500" />}
                                                     <div id="gap-difference"></div>
                                                 </div>
