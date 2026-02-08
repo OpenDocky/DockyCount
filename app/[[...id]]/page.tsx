@@ -547,6 +547,7 @@ function DockyCount() {
 
         const nextPath = nextId ? `${basePath}/${nextId}` : basePath
         router.push(nextPath)
+        router.refresh()
     }
 
     const getResultId = (result: any) => result?.[2] ?? ""
