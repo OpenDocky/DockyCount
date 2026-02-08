@@ -556,7 +556,6 @@ function DockyCount() {
         newSearchParams.set("mode", nextMode)
 
         // Only include ID if it's relevant for the new platform/mode
-        // If switching to a new platform, and no current item ID, do NOT set "search"
         if (nextPlatform === platformToUse && currentItemIdToUse) { // If only platform is changing
              if (nextPlatform === "youtube" && currentItemIdToUse.startsWith("UC")) {
                 newSearchParams.set("id", currentItemIdToUse)
@@ -801,7 +800,7 @@ function DockyCount() {
         if (!isVideoMode && !isTikTok && !isTwitter && !isInstagram && compareChannel) {
             setTimeout(() => {
                 updateOdometer("compare-subscribers", compareChannel.subscribers)
-                updateOdometer("compare-views", compareChannel.views)
+                updateOdometer("compare-views", compareChannel.likes)
                 updateOdometer("compare-videos", compareChannel.videos)
             }, 50)
         }
@@ -929,7 +928,6 @@ function DockyCount() {
                         secondaryB: selectedTwitter.tweets,
                         meta: null,
                     }
-                    fondo-color-amarillo-claro-degradado="true"
                     : null)
                 : (isInstagram
                     ? (selectedInstagram
@@ -1425,7 +1423,7 @@ function DockyCount() {
                                     <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
                                     <BarChart3 className="w-10 h-10 text-primary relative z-10" />
                                 </div>
-                                <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-4">Start Monitoring</h2>
+                                <h2 className="text-3xl md::text-4xl font-black tracking-tight mb-4">Start Monitoring</h2>
                                 <p className="text-muted-foreground max-w-md mx-auto mb-8 text-lg">
                                     Search for any {platformToUse === "youtube" ? "YouTube " : ""}{emptyStateLabel} above to see real-time statistics, future projections, and detailed comparisons.
                                 </p>
