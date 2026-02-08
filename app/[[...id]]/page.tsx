@@ -39,6 +39,24 @@ interface TikTokData {
     videos: number
 }
 
+interface TwitterData {
+    id: string
+    name: string
+    avatar: string
+    followers: number
+    likes: number
+    tweets: number
+}
+
+interface InstagramData {
+    id: string
+    name: string
+    avatar: string
+    followers: number
+    likes: number
+    posts: number
+}
+
 interface Favorite {
     id: string
     name: string
@@ -49,8 +67,8 @@ interface Favorite {
 
 type ContentMode = "channel" | "video"
 
-export const dynamic = "force-dynamic"
-export const runtime = "edge"
+// export const dynamic = "force-dynamic"
+// export const runtime = "edge"
 
 function MilestoneTracker({ current, goal }: { current: number, goal: number }) {
     const progress = Math.min((current / goal) * 100, 100)
@@ -102,6 +120,10 @@ function DockyCount() {
     const [compareVideo, setCompareVideo] = useState<VideoData | null>(null)
     const [selectedTikTok, setSelectedTikTok] = useState<TikTokData | null>(null)
     const [compareTikTok, setCompareTikTok] = useState<TikTokData | null>(null)
+    const [selectedTwitter, setSelectedTwitter] = useState<TwitterData | null>(null)
+    const [compareTwitter, setCompareTwitter] = useState<TwitterData | null>(null)
+    const [selectedInstagram, setSelectedInstagram] = useState<InstagramData | null>(null)
+    const [compareInstagram, setCompareInstagram] = useState<InstagramData | null>(null)
     const [favorites, setFavorites] = useState<Favorite[]>([])
     const [isSearching, setIsSearching] = useState(false)
     const [compareMode, setCompareMode] = useState(false)
@@ -114,15 +136,17 @@ function DockyCount() {
     const params = useParams()
     const { toast } = useToast()
 
-    const rawSegments = params.id ? (Array.isArray(params.id) ? params.id : [params.id]) : []
-    const pathSegments = rawSegments.filter((segment): segment is string => Boolean(segment))
+    const idParam = params?.id
+    const rawSegments = idParam ? (Array.isArray(idParam) ? idParam : [idParam]) : []
+    const pathSegments = rawSegments.filter(Boolean)
 
     let pathPlatform: string | null = null
     let pathMode: ContentMode | null = null
     let pathId: string | null = null
 
     if (pathSegments.length > 0) {
-        if (pathSegments[0] === "youtube") {
+        const first = pathSegments[0].toLowerCase()
+        if (first === "youtube") {
             pathPlatform = "youtube"
             if (pathSegments[1] === "channel" || pathSegments[1] === "video") {
                 pathMode = pathSegments[1] === "video" ? "video" : "channel"
@@ -131,21 +155,26 @@ function DockyCount() {
                 pathMode = "channel"
                 pathId = pathSegments[1] ?? null
             }
-        } else if (pathSegments[0] === "tiktok") {
-            pathPlatform = "tiktok"
+        } else if (["tiktok", "twitter", "instagram"].includes(first)) {
+            pathPlatform = first
             pathMode = "channel"
             pathId = pathSegments[1] ?? null
         } else {
-            pathId = pathSegments[0] ?? null
+            // If the first segment isn't a platform, it's likely a legacy YouTube ID
+            pathId = pathSegments[0]
+            pathPlatform = "youtube"
+            pathMode = "channel"
         }
     }
 
-    const platform = pathPlatform ?? searchParams.get("platform") ?? "youtube"
+    const platform = pathPlatform || searchParams.get("platform") || "youtube"
     const rawModeFromQuery: ContentMode = searchParams.get("mode") === "video" ? "video" : "channel"
     const rawMode: ContentMode = pathMode ?? rawModeFromQuery
     const contentMode: ContentMode = platform === "youtube" ? rawMode : "channel"
     const isVideoMode = contentMode === "video"
     const isTikTok = platform === "tiktok"
+    const isTwitter = platform === "twitter"
+    const isInstagram = platform === "instagram"
     const currentItemId = pathId || searchParams.get("id")
 
     const intervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -260,6 +289,58 @@ function DockyCount() {
         }
     }
 
+    const fetchTwitterStats = async (username: string, isCompare = false) => {
+        try {
+            const response = await fetch(`/api/twitter-stats/${username}`)
+            const data = await response.json()
+            if (data) {
+                const name = getVideoUserValue(data.user, "name") || username
+                const avatar = getVideoUserValue(data.user, "pfp") || getVideoUserValue(data.user, "banner") || ""
+                const twitterData: TwitterData = {
+                    id: username,
+                    name,
+                    avatar,
+                    followers: getVideoCount(data.counts, "followers") ?? 0,
+                    likes: getVideoCount(data.counts, "likes") ?? 0,
+                    tweets: getVideoCount(data.counts, "tweets") ?? 0,
+                }
+                if (isCompare) {
+                    setCompareTwitter(twitterData)
+                } else {
+                    setSelectedTwitter(twitterData)
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching Twitter stats:", error)
+        }
+    }
+
+    const fetchInstagramStats = async (username: string, isCompare = false) => {
+        try {
+            const response = await fetch(`/api/instagram-stats/${username}`)
+            const data = await response.json()
+            if (data) {
+                const name = getVideoUserValue(data.user, "name") || username
+                const avatar = getVideoUserValue(data.user, "pfp") || getVideoUserValue(data.user, "banner") || ""
+                const instagramData: InstagramData = {
+                    id: username,
+                    name,
+                    avatar,
+                    followers: getVideoCount(data.counts, "followers") ?? 0,
+                    likes: getVideoCount(data.counts, "likes") ?? 0,
+                    posts: getVideoCount(data.counts, "posts") ?? 0,
+                }
+                if (isCompare) {
+                    setCompareInstagram(instagramData)
+                } else {
+                    setSelectedInstagram(instagramData)
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching Instagram stats:", error)
+        }
+    }
+
     const updateOdometer = (id: string, value: number) => {
         const element = document.getElementById(id)
         if (element && typeof window !== "undefined" && (window as any).Odometer) {
@@ -288,7 +369,10 @@ function DockyCount() {
         }
         setIsSearching(true)
         try {
-            const endpoint = platform === "tiktok" ? "/api/tiktok-search" : (isVideoMode ? "/api/video-search" : "/api/search")
+            const endpoint = isTikTok ? "/api/tiktok-search" :
+                isTwitter ? "/api/twitter-search" :
+                    isInstagram ? "/api/instagram-search" :
+                        (isVideoMode ? "/api/video-search" : "/api/search")
             const response = await fetch(`${endpoint}?q=${encodeURIComponent(query)}`)
             const data = await response.json()
             if (data && data.list && data.list.length > 0) {
@@ -310,7 +394,10 @@ function DockyCount() {
         }
         setIsSearching(true)
         try {
-            const endpoint = platform === "tiktok" ? "/api/tiktok-search" : (isVideoMode ? "/api/video-search" : "/api/search")
+            const endpoint = isTikTok ? "/api/tiktok-search" :
+                isTwitter ? "/api/twitter-search" :
+                    isInstagram ? "/api/instagram-search" :
+                        (isVideoMode ? "/api/video-search" : "/api/search")
             const response = await fetch(`${endpoint}?q=${encodeURIComponent(query)}`)
             const data = await response.json()
             if (data && data.list && data.list.length > 0) {
@@ -336,10 +423,20 @@ function DockyCount() {
         }
         if (isCompare) {
             if (compareIntervalRef.current) clearInterval(compareIntervalRef.current)
-            if (platform === "tiktok") {
+            if (isTikTok) {
                 fetchTikTokStats(itemId, true)
                 compareIntervalRef.current = setInterval(() => {
                     fetchTikTokStats(itemId, true)
+                }, 2000)
+            } else if (isTwitter) {
+                fetchTwitterStats(itemId, true)
+                compareIntervalRef.current = setInterval(() => {
+                    fetchTwitterStats(itemId, true)
+                }, 2000)
+            } else if (isInstagram) {
+                fetchInstagramStats(itemId, true)
+                compareIntervalRef.current = setInterval(() => {
+                    fetchInstagramStats(itemId, true)
                 }, 2000)
             } else if (isVideoMode) {
                 fetchVideoStats(itemId, true)
@@ -434,29 +531,36 @@ function DockyCount() {
 
     const updatePlatform = (value: string) => {
         const nextPlatform = value || "youtube"
+        // Force channel mode for non-YouTube platforms
         const nextMode = nextPlatform === "youtube" ? contentMode : "channel"
         const basePath = buildBasePath(nextPlatform, nextMode)
+
         let nextId: string | null = currentItemId
+        // Clear YouTube-specific IDs when moving to other platforms
         if (nextPlatform !== "youtube" && nextId?.startsWith("UC")) {
             nextId = null
         }
+        // Clear non-YouTube IDs when moving to YouTube channel mode
         if (nextPlatform === "youtube" && nextMode === "channel" && nextId && !nextId.startsWith("UC")) {
             nextId = null
         }
+
         const nextPath = nextId ? `${basePath}/${nextId}` : basePath
-        router.replace(nextPath)
+        router.push(nextPath)
     }
 
     const getResultId = (result: any) => result?.[2] ?? ""
     const getResultTitle = (result: any) => result?.[0] ?? ""
     const getResultSubtitle = (result: any) => {
         if (isVideoMode) return result?.[2] ? `ID: ${result[2]}` : "Video"
-        if (platform === "tiktok") return result?.[2] ? `@${result[2]}` : "TikTok"
+        if (isTikTok) return result?.[2] ? `@${result[2]}` : "TikTok"
+        if (isTwitter) return result?.[2] ? `@${result[2]}` : "Twitter"
+        if (isInstagram) return result?.[2] ? `@${result[2]}` : "Instagram"
         return result?.[1] ?? ""
     }
     const getResultImage = (result: any) => {
         if (isVideoMode) return result?.[1] ?? ""
-        if (platform === "tiktok") return result?.[1] ?? ""
+        if (isTikTok || isTwitter || isInstagram) return result?.[1] ?? ""
         return result?.[3] ?? ""
     }
     const isFavoriteItem = (id: string) =>
@@ -497,6 +601,10 @@ function DockyCount() {
         setCompareVideo(null)
         setSelectedTikTok(null)
         setCompareTikTok(null)
+        setSelectedTwitter(null)
+        setCompareTwitter(null)
+        setSelectedInstagram(null)
+        setCompareInstagram(null)
         setPrimaryGap(null)
         setSearchResults([])
         setSearchResults2([])
@@ -515,10 +623,26 @@ function DockyCount() {
 
         if (intervalRef.current) clearInterval(intervalRef.current)
 
-        if (platform === "tiktok") {
+        if (isTikTok) {
             fetchTikTokStats(itemId, false)
             intervalRef.current = setInterval(() => {
                 fetchTikTokStats(itemId, false)
+            }, 2000)
+            return
+        }
+
+        if (isTwitter) {
+            fetchTwitterStats(itemId, false)
+            intervalRef.current = setInterval(() => {
+                fetchTwitterStats(itemId, false)
+            }, 2000)
+            return
+        }
+
+        if (isInstagram) {
+            fetchInstagramStats(itemId, false)
+            intervalRef.current = setInterval(() => {
+                fetchInstagramStats(itemId, false)
             }, 2000)
             return
         }
@@ -607,14 +731,28 @@ function DockyCount() {
                 updateOdometer("main-videos", selectedTikTok.videos)
             }, 50)
         }
-        if (!isVideoMode && !isTikTok && selectedChannel) {
+        if (!isVideoMode && isTwitter && selectedTwitter) {
+            setTimeout(() => {
+                updateOdometer("main-subscribers", selectedTwitter.followers)
+                updateOdometer("main-views", selectedTwitter.likes)
+                updateOdometer("main-videos", selectedTwitter.tweets)
+            }, 50)
+        }
+        if (!isVideoMode && isInstagram && selectedInstagram) {
+            setTimeout(() => {
+                updateOdometer("main-subscribers", selectedInstagram.followers)
+                updateOdometer("main-views", selectedInstagram.likes)
+                updateOdometer("main-videos", selectedInstagram.posts)
+            }, 50)
+        }
+        if (!isVideoMode && !isTikTok && !isTwitter && !isInstagram && selectedChannel) {
             setTimeout(() => {
                 updateOdometer("main-subscribers", selectedChannel.subscribers)
                 updateOdometer("main-views", selectedChannel.views)
                 updateOdometer("main-videos", selectedChannel.videos)
             }, 50)
         }
-    }, [selectedChannel, selectedVideo, selectedTikTok, compareMode, isVideoMode, isTikTok])
+    }, [selectedChannel, selectedVideo, selectedTikTok, selectedTwitter, selectedInstagram, compareMode, isVideoMode, isTikTok, isTwitter, isInstagram])
 
     useEffect(() => {
         if (isVideoMode && compareVideo) {
@@ -631,22 +769,36 @@ function DockyCount() {
                 updateOdometer("compare-videos", compareTikTok.videos)
             }, 50)
         }
-        if (!isVideoMode && !isTikTok && compareChannel) {
+        if (!isVideoMode && isTwitter && compareTwitter) {
+            setTimeout(() => {
+                updateOdometer("compare-subscribers", compareTwitter.followers)
+                updateOdometer("compare-views", compareTwitter.likes)
+                updateOdometer("compare-videos", compareTwitter.tweets)
+            }, 50)
+        }
+        if (!isVideoMode && isInstagram && compareInstagram) {
+            setTimeout(() => {
+                updateOdometer("compare-subscribers", compareInstagram.followers)
+                updateOdometer("compare-views", compareInstagram.likes)
+                updateOdometer("compare-videos", compareInstagram.posts)
+            }, 50)
+        }
+        if (!isVideoMode && !isTikTok && !isTwitter && !isInstagram && compareChannel) {
             setTimeout(() => {
                 updateOdometer("compare-subscribers", compareChannel.subscribers)
                 updateOdometer("compare-views", compareChannel.views)
                 updateOdometer("compare-videos", compareChannel.videos)
             }, 50)
         }
-    }, [compareChannel, compareVideo, compareTikTok, compareMode, isVideoMode, isTikTok])
+    }, [compareChannel, compareVideo, compareTikTok, compareTwitter, compareInstagram, compareMode, isVideoMode, isTikTok, isTwitter, isInstagram])
 
     useEffect(() => {
         const primaryMain = isVideoMode
             ? selectedVideo?.views
-            : (isTikTok ? selectedTikTok?.followers : selectedChannel?.subscribers)
+            : (isTikTok ? selectedTikTok?.followers : (isTwitter ? selectedTwitter?.followers : (isInstagram ? selectedInstagram?.followers : selectedChannel?.subscribers)))
         const primaryCompare = isVideoMode
             ? compareVideo?.views
-            : (isTikTok ? compareTikTok?.followers : compareChannel?.subscribers)
+            : (isTikTok ? compareTikTok?.followers : (isTwitter ? compareTwitter?.followers : (isInstagram ? compareInstagram?.followers : compareChannel?.subscribers)))
 
         if (primaryMain !== undefined && primaryMain !== null && primaryCompare !== undefined && primaryCompare !== null) {
             const diff = Math.abs(primaryMain - primaryCompare)
@@ -657,7 +809,7 @@ function DockyCount() {
         } else {
             setPrimaryGap(null)
         }
-    }, [selectedChannel, compareChannel, selectedVideo, compareVideo, selectedTikTok, compareTikTok, isVideoMode, isTikTok])
+    }, [selectedChannel, compareChannel, selectedVideo, compareVideo, selectedTikTok, compareTikTok, selectedTwitter, compareTwitter, selectedInstagram, compareInstagram, isVideoMode, isTikTok, isTwitter, isInstagram])
 
     useEffect(() => {
         const compareId = searchParams.get("compare")
@@ -668,10 +820,20 @@ function DockyCount() {
             setCompareMode(true)
         }
         if (compareIntervalRef.current) clearInterval(compareIntervalRef.current)
-        if (platform === "tiktok") {
+        if (isTikTok) {
             fetchTikTokStats(compareId, true)
             compareIntervalRef.current = setInterval(() => {
                 fetchTikTokStats(compareId, true)
+            }, 2000)
+        } else if (isTwitter) {
+            fetchTwitterStats(compareId, true)
+            compareIntervalRef.current = setInterval(() => {
+                fetchTwitterStats(compareId, true)
+            }, 2000)
+        } else if (isInstagram) {
+            fetchInstagramStats(compareId, true)
+            compareIntervalRef.current = setInterval(() => {
+                fetchInstagramStats(compareId, true)
             }, 2000)
         } else if (isVideoMode) {
             fetchVideoStats(compareId, true)
@@ -693,6 +855,8 @@ function DockyCount() {
             setCompareChannel(null)
             setCompareVideo(null)
             setCompareTikTok(null)
+            setCompareTwitter(null)
+            setCompareInstagram(null)
             setPrimaryGap(null)
         }
     }, [compareMode])
@@ -739,17 +903,41 @@ function DockyCount() {
                     meta: null,
                 }
                 : null)
-            : (selectedChannel
-                ? {
-                    id: selectedChannel.id,
-                    name: selectedChannel.name,
-                    avatar: selectedChannel.avatar,
-                    primary: selectedChannel.subscribers,
-                    secondaryA: selectedChannel.views,
-                    secondaryB: selectedChannel.videos,
-                    meta: null,
-                }
-                : null))
+            : (isTwitter
+                ? (selectedTwitter
+                    ? {
+                        id: selectedTwitter.id,
+                        name: selectedTwitter.name,
+                        avatar: selectedTwitter.avatar,
+                        primary: selectedTwitter.followers,
+                        secondaryA: selectedTwitter.likes,
+                        secondaryB: selectedTwitter.tweets,
+                        meta: null,
+                    }
+                    : null)
+                : (isInstagram
+                    ? (selectedInstagram
+                        ? {
+                            id: selectedInstagram.id,
+                            name: selectedInstagram.name,
+                            avatar: selectedInstagram.avatar,
+                            primary: selectedInstagram.followers,
+                            secondaryA: selectedInstagram.likes,
+                            secondaryB: selectedInstagram.posts,
+                            meta: null,
+                        }
+                        : null)
+                    : (selectedChannel
+                        ? {
+                            id: selectedChannel.id,
+                            name: selectedChannel.name,
+                            avatar: selectedChannel.avatar,
+                            primary: selectedChannel.subscribers,
+                            secondaryA: selectedChannel.views,
+                            secondaryB: selectedChannel.videos,
+                            meta: null,
+                        }
+                        : null))))
 
     const compareDisplay = isVideoMode
         ? (compareVideo
@@ -775,28 +963,52 @@ function DockyCount() {
                     meta: null,
                 }
                 : null)
-            : (compareChannel
-                ? {
-                    id: compareChannel.id,
-                    name: compareChannel.name,
-                    avatar: compareChannel.avatar,
-                    primary: compareChannel.subscribers,
-                    secondaryA: compareChannel.views,
-                    secondaryB: compareChannel.videos,
-                    meta: null,
-                }
-                : null))
+            : (isTwitter
+                ? (compareTwitter
+                    ? {
+                        id: compareTwitter.id,
+                        name: compareTwitter.name,
+                        avatar: compareTwitter.avatar,
+                        primary: compareTwitter.followers,
+                        secondaryA: compareTwitter.likes,
+                        secondaryB: compareTwitter.tweets,
+                        meta: null,
+                    }
+                    : null)
+                : (isInstagram
+                    ? (compareInstagram
+                        ? {
+                            id: compareInstagram.id,
+                            name: compareInstagram.name,
+                            avatar: compareInstagram.avatar,
+                            primary: compareInstagram.followers,
+                            secondaryA: compareInstagram.likes,
+                            secondaryB: compareInstagram.posts,
+                            meta: null,
+                        }
+                        : null)
+                    : (compareChannel
+                        ? {
+                            id: compareChannel.id,
+                            name: compareChannel.name,
+                            avatar: compareChannel.avatar,
+                            primary: compareChannel.subscribers,
+                            secondaryA: compareChannel.views,
+                            secondaryB: compareChannel.videos,
+                            meta: null,
+                        }
+                        : null))))
 
-    const primaryLabel = isTikTok ? "Followers" : (isVideoMode ? "Total Views" : "Total Subscribers")
-    const secondaryLabelA = isTikTok ? "Likes" : (isVideoMode ? "Likes" : "Total Views")
-    const secondaryLabelB = isTikTok ? "Videos" : (isVideoMode ? "Comments" : "Videos")
-    const gapLabel = isTikTok ? "Follower Difference" : (isVideoMode ? "View Difference" : "Subscriber Difference")
-    const emptyStateLabel = isTikTok ? "TikTok account" : (isVideoMode ? "video" : "channel")
+    const primaryLabel = (isTikTok || isTwitter || isInstagram) ? "Followers" : (isVideoMode ? "Total Views" : "Total Subscribers")
+    const secondaryLabelA = (isTikTok || isTwitter || isInstagram) ? "Likes" : (isVideoMode ? "Likes" : "Total Views")
+    const secondaryLabelB = isTwitter ? "Tweets" : (isInstagram ? "Posts" : (isTikTok ? "Videos" : (isVideoMode ? "Comments" : "Videos")))
+    const gapLabel = (isTikTok || isTwitter || isInstagram) ? "Follower Difference" : (isVideoMode ? "View Difference" : "Subscriber Difference")
+    const emptyStateLabel = isTikTok ? "TikTok account" : (isTwitter ? "Twitter account" : (isInstagram ? "Instagram account" : (isVideoMode ? "video" : "channel")))
     const searchPlaceholder = isVideoMode
         ? "Search YouTube video..."
-        : (isTikTok ? "Search TikTok account..." : "Search YouTube channel...")
-    const comparePlaceholderA = isVideoMode ? "Video 1..." : (isTikTok ? "Account 1..." : "Channel 1...")
-    const comparePlaceholderB = isVideoMode ? "Video 2..." : (isTikTok ? "Account 2..." : "Channel 2...")
+        : (isTikTok ? "Search TikTok account..." : (isTwitter ? "Search Twitter account..." : (isInstagram ? "Search Instagram account..." : "Search YouTube channel...")))
+    const comparePlaceholderA = isVideoMode ? "Video 1..." : (isTikTok ? "Account 1..." : (isTwitter ? "Twitter 1..." : (isInstagram ? "Instagram 1..." : "Channel 1...")))
+    const comparePlaceholderB = isVideoMode ? "Video 2..." : (isTikTok ? "Account 2..." : (isTwitter ? "Twitter 2..." : (isInstagram ? "Instagram 2..." : "Channel 2...")))
 
     if (!mounted) return null
 
@@ -915,11 +1127,10 @@ function DockyCount() {
                                                 YouTube
                                             </SelectItem>
                                             <SelectItem
-                                                value="twitch"
-                                                disabled
+                                                value="twitter"
                                                 className="rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-wide data-[highlighted]:bg-secondary/70 data-[highlighted]:text-foreground data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary"
                                             >
-                                                Twitch (soon)
+                                                Twitter / X
                                             </SelectItem>
                                             <SelectItem
                                                 value="tiktok"
@@ -928,11 +1139,10 @@ function DockyCount() {
                                                 TikTok
                                             </SelectItem>
                                             <SelectItem
-                                                value="kick"
-                                                disabled
+                                                value="instagram"
                                                 className="rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-wide data-[highlighted]:bg-secondary/70 data-[highlighted]:text-foreground data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary"
                                             >
-                                                Kick (soon)
+                                                Instagram
                                             </SelectItem>
                                         </SelectContent>
                                     </Select>
@@ -1201,7 +1411,7 @@ function DockyCount() {
                                 </div>
                                 <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-4">Start Monitoring</h2>
                                 <p className="text-muted-foreground max-w-md mx-auto mb-8 text-lg">
-                                    Search for any YouTube {emptyStateLabel} above to see real-time statistics, future projections, and detailed comparisons.
+                                    Search for any {platform === "youtube" ? "YouTube " : ""}{emptyStateLabel} above to see real-time statistics, future projections, and detailed comparisons.
                                 </p>
                                 <div className="flex gap-2">
                                     <div className="h-2 w-2 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]" />
@@ -1218,6 +1428,10 @@ function DockyCount() {
 }
 
 export default function DockyCountPage() {
+    const params = useParams()
+    const idParam = params?.id
+    const key = Array.isArray(idParam) ? idParam.join("-") : (idParam || "home")
+
     return (
         <Suspense fallback={
             <div className="min-h-screen flex items-center justify-center bg-background">
@@ -1227,7 +1441,7 @@ export default function DockyCountPage() {
                 </div>
             </div>
         }>
-            <DockyCount />
+            <DockyCount key={key} />
         </Suspense>
     )
 }
