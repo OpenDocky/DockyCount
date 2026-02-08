@@ -1116,7 +1116,7 @@ function DockyCount() {
                             <div className="flex flex-wrap gap-3 mb-6">
                                 <div className="flex items-center gap-3 px-3 py-2 bg-secondary/50 rounded-2xl border border-border/50 w-fit">
                                     <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Platform</span>
-                                    <Select value={platform} onValueChange={updatePlatform}>
+                                    <Select value={platform} onValueChange={updatePlatform} key={platform}>
                                         <SelectTrigger className="h-9 rounded-xl border-border/60 bg-background/70 text-xs font-bold uppercase tracking-wide shadow-none">
                                             <SelectValue placeholder="Select platform" />
                                         </SelectTrigger>
