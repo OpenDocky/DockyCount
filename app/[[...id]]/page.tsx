@@ -560,7 +560,7 @@ function DockyCount() {
         }
 
         const nextPath = nextId ? `${basePath}/${nextId}` : basePath
-        window.location.href = nextPath
+        router.push(nextPath)
     }
 
     const getResultId = (result: any) => result?.[2] ?? ""
