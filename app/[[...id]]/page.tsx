@@ -167,7 +167,17 @@ function DockyCount() {
         }
     }
 
-    const platform = pathPlatform || searchParams.get("platform") || "youtube"
+    const [platform, setPlatform] = useState(() => {
+        const initialPathPlatform = pathPlatform || searchParams.get("platform") || "youtube"
+        return initialPathPlatform
+    })
+
+    useEffect(() => {
+        const platformFromUrl = pathPlatform || searchParams.get("platform") || "youtube"
+        if (platformFromUrl !== platform) {
+            setPlatform(platformFromUrl)
+        }
+    }, [params, searchParams])
     const rawModeFromQuery: ContentMode = searchParams.get("mode") === "video" ? "video" : "channel"
     const rawMode: ContentMode = pathMode ?? rawModeFromQuery
     const contentMode: ContentMode = platform === "youtube" ? rawMode : "channel"
@@ -531,23 +541,21 @@ function DockyCount() {
 
     const updatePlatform = (value: string) => {
         const nextPlatform = value || "youtube"
-        // Force channel mode for non-YouTube platforms
+        setPlatform(nextPlatform)
+        
         const nextMode = nextPlatform === "youtube" ? contentMode : "channel"
         const basePath = buildBasePath(nextPlatform, nextMode)
 
         let nextId: string | null = currentItemId
-        // Clear YouTube-specific IDs when moving to other platforms
         if (nextPlatform !== "youtube" && nextId?.startsWith("UC")) {
             nextId = null
         }
-        // Clear non-YouTube IDs when moving to YouTube channel mode
         if (nextPlatform === "youtube" && nextMode === "channel" && nextId && !nextId.startsWith("UC")) {
             nextId = null
         }
 
         const nextPath = nextId ? `${basePath}/${nextId}` : basePath
         router.push(nextPath)
-        router.refresh()
     }
 
     const getResultId = (result: any) => result?.[2] ?? ""
@@ -1116,7 +1124,7 @@ function DockyCount() {
                             <div className="flex flex-wrap gap-3 mb-6">
                                 <div className="flex items-center gap-3 px-3 py-2 bg-secondary/50 rounded-2xl border border-border/50 w-fit">
                                     <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Platform</span>
-                                    <Select value={platform} onValueChange={updatePlatform} key={platform}>
+                                    <Select value={platform} onValueChange={updatePlatform}>
                                         <SelectTrigger className="h-9 rounded-xl border-border/60 bg-background/70 text-xs font-bold uppercase tracking-wide shadow-none">
                                             <SelectValue placeholder="Select platform" />
                                         </SelectTrigger>
