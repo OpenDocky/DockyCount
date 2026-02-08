@@ -547,10 +547,15 @@ function DockyCount() {
         const basePath = buildBasePath(nextPlatform, nextMode)
 
         let nextId: string | null = currentItemId
-        if (nextPlatform !== "youtube" && nextId?.startsWith("UC")) {
-            nextId = null
-        }
-        if (nextPlatform === "youtube" && nextMode === "channel" && nextId && !nextId.startsWith("UC")) {
+        if (nextPlatform !== "youtube") {
+            if (nextId?.startsWith("UC")) { // Clear YouTube channel ID when switching away
+                nextId = null
+            }
+            if (!nextId) { // Ensure there's always an ID for non-YouTube platforms
+                nextId = "search" // Use a default ID if none exists
+            }
+        } else if (nextPlatform === "youtube" && nextMode === "channel" && nextId && !nextId.startsWith("UC")) {
+            // Clear non-YouTube IDs when moving to YouTube channel mode
             nextId = null
         }
 
@@ -602,7 +607,7 @@ function DockyCount() {
     }, [])
 
     useEffect(() => {
-        if (intervalRef.current) clearInterval(intervalRefRef.current)
+        if (intervalRef.current) clearInterval(intervalRef.current)
         if (compareIntervalRef.current) clearInterval(compareIntervalRef.current)
         setSelectedChannel(null)
         setCompareChannel(null)
@@ -795,7 +800,7 @@ function DockyCount() {
         if (!isVideoMode && !isTikTok && !isTwitter && !isInstagram && compareChannel) {
             setTimeout(() => {
                 updateOdometer("compare-subscribers", compareChannel.subscribers)
-                updateOdometer("compare-views", compareChannel.views)
+                updateOdometer("compare-views", compareChannel.likes)
                 updateOdometer("compare-videos", compareChannel.videos)
             }, 50)
         }
@@ -1091,7 +1096,7 @@ function DockyCount() {
                                             onClick={() => router.push(buildItemUrl(fav.id, (fav.type ?? "channel") as ContentMode, fav.platform ?? "youtube"))}
                                             className="w-full flex items-center gap-3 p-2 hover:bg-secondary/80 rounded-xl transition-all group"
                                         >
-                                            <img src={fav.avatar} alt={fav.name} className="w-8 h-8 rounded-lg shadow-sm" />
+                                            <img src={fav.avatar} className="w-8 h-8 rounded-lg object-cover shadow-sm" />
                                             <div className="flex-1 text-left overflow-hidden">
                                                 <div className="font-bold text-sm truncate group-hover:text-primary transition-colors">{fav.name}</div>
                                             </div>
