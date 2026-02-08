@@ -77,11 +77,11 @@ Visit `http://localhost:3000` to see it in action!
 ## 🗺️ Roadmap
 
 ### Version 20 (Next Release)
-- [ ] Instagram integration
+- [x] X integration
 - [ ] Dark/Light theme toggle
 
 ### Version 21
-- [ ] Twitch support
+- [ ] Instagram support
 - [ ] Advanced graphs and charts
 
 ### Long-term
