@@ -136,46 +136,59 @@ function DockyCount() {
     const params = useParams()
     const { toast } = useToast()
 
+    // --- NEW: Derive platform and ID directly from searchParams primarily ---
+    const platform = searchParams.get("platform") || "youtube"
+    const contentMode = searchParams.get("mode") === "video" ? "video" : "channel"
+    const currentItemId = searchParams.get("id")
+
+    // Legacy path segment parsing for initial load or direct path access (if still desired)
+    // This block is now secondary to query parameters for platform/mode/id determination.
+    let pathPlatformFromParams: string | null = null
+    let pathModeFromParams: ContentMode | null = null
+    let pathIdFromParams: string | null = null
+
     const idParam = params?.id
     const rawSegments = idParam ? (Array.isArray(idParam) ? idParam : [idParam]) : []
     const pathSegments = rawSegments.filter(Boolean)
 
-    let pathPlatform: string | null = null
-    let pathMode: ContentMode | null = null
-    let pathId: string | null = null
-
-    if (pathSegments.length > 0) {
+    if (pathSegments.length > 0 && !searchParams.get("platform")) { // Only use path if no platform query param
         const first = pathSegments[0].toLowerCase()
         if (first === "youtube") {
-            pathPlatform = "youtube"
+            pathPlatformFromParams = "youtube"
             if (pathSegments[1] === "channel" || pathSegments[1] === "video") {
-                pathMode = pathSegments[1] === "video" ? "video" : "channel"
-                pathId = pathSegments[2] ?? null
+                pathModeFromParams = pathSegments[1] === "video" ? "video" : "channel"
+                pathIdFromParams = pathSegments[2] ?? null
             } else {
-                pathMode = "channel"
-                pathId = pathSegments[1] ?? null
+                pathModeFromParams = "channel"
+                pathIdFromParams = pathSegments[1] ?? null
             }
         } else if (["tiktok", "twitter", "instagram"].includes(first)) {
-            pathPlatform = first
-            pathMode = "channel"
-            pathId = pathSegments[1] ?? null
+            pathPlatformFromParams = first
+            pathModeFromParams = "channel"
+            pathIdFromParams = pathSegments[1] ?? null
         } else {
             // If the first segment isn't a platform, it's likely a legacy YouTube ID
-            pathId = pathSegments[0]
-            pathPlatform = "youtube"
-            pathMode = "channel"
+            pathIdFromParams = pathSegments[0]
+            pathPlatformFromParams = "youtube"
+            pathModeFromParams = "channel"
         }
     }
 
-    const platform = pathPlatform || searchParams.get("platform") || "youtube"
-    const rawModeFromQuery: ContentMode = searchParams.get("mode") === "video" ? "video" : "channel"
-    const rawMode: ContentMode = pathMode ?? rawModeFromQuery
-    const contentMode: ContentMode = platform === "youtube" ? rawMode : "channel"
-    const isVideoMode = contentMode === "video"
-    const isTikTok = platform === "tiktok"
-    const isTwitter = platform === "twitter"
-    const isInstagram = platform === "instagram"
-    const currentItemId = pathId || searchParams.get("id")
+    // If query params are absent, fallback to path params for initial state
+    const finalPlatform = platform || pathPlatformFromParams || "youtube"
+    const finalContentMode = contentMode || pathModeFromParams || (finalPlatform === "youtube" ? "channel" : "channel")
+    const finalItemId = currentItemId || pathIdFromParams
+
+    // Override the "derived" vars with the new final ones
+    // This allows keeping the original names for other functions that use them.
+    const platformToUse = finalPlatform
+    const contentModeToUse = finalContentMode
+    const currentItemIdToUse = finalItemId
+
+    const isVideoMode = contentModeToUse === "video"
+    const isTikTok = platformToUse === "tiktok"
+    const isTwitter = platformToUse === "twitter"
+    const isInstagram = platformToUse === "instagram"
 
     const intervalRef = useRef<NodeJS.Timeout | null>(null)
     const compareIntervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -416,7 +429,12 @@ function DockyCount() {
         const itemId = getResultId(result)
         if (!itemId) return
         if (!isCompare) {
-            router.push(buildItemUrl(itemId, contentMode))
+            // Updated to use query params
+            const newSearchParams = new URLSearchParams()
+            newSearchParams.set("platform", platformToUse)
+            newSearchParams.set("mode", contentModeToUse)
+            newSearchParams.set("id", itemId)
+            router.push(`/?${newSearchParams.toString()}`)
             setSearchResults([])
             setSearchQuery("")
             return
@@ -455,13 +473,13 @@ function DockyCount() {
     }
 
     const toggleFavorite = (item: { id: string, name: string, avatar: string }) => {
-        const itemType: ContentMode = contentMode
-        const isFavorite = favorites.some((f) => f.id === item.id && (f.type ?? "channel") === itemType && (f.platform ?? "youtube") === platform)
+        const itemType: ContentMode = contentModeToUse
+        const isFavorite = favorites.some((f) => f.id === item.id && (f.type ?? "channel") === itemType && (f.platform ?? "youtube") === platformToUse)
         let newFavorites: Favorite[]
         if (isFavorite) {
-            newFavorites = favorites.filter((f) => !(f.id === item.id && (f.type ?? "channel") === itemType && (f.platform ?? "youtube") === platform))
+            newFavorites = favorites.filter((f) => !(f.id === item.id && (f.type ?? "channel") === itemType && (f.platform ?? "youtube") === platformToUse))
         } else {
-            newFavorites = [...favorites, { id: item.id, name: item.name, avatar: item.avatar, type: itemType, platform }]
+            newFavorites = [...favorites, { id: item.id, name: item.name, avatar: item.avatar, type: itemType, platform: platformToUse }]
         }
         setFavorites(newFavorites)
         localStorage.setItem("dockycount_favorites", JSON.stringify(newFavorites))
@@ -500,53 +518,56 @@ function DockyCount() {
     }
 
     const buildItemUrl = (id: string, mode: ContentMode, overridePlatform?: string) => {
-        const resolvedPlatform = overridePlatform ?? platform
-        if (resolvedPlatform === "youtube") {
-            return mode === "video" ? `/youtube/video/${id}` : `/youtube/channel/${id}`
+        const resolvedPlatform = overridePlatform ?? platformToUse
+        const resolvedMode = mode ?? contentModeToUse
+        const newSearchParams = new URLSearchParams()
+        newSearchParams.set("platform", resolvedPlatform)
+        newSearchParams.set("mode", resolvedMode)
+        if (id) {
+            newSearchParams.set("id", id)
         }
-        return `/${resolvedPlatform}/${id}`
+        return `/?${newSearchParams.toString()}`
     }
 
     const buildBasePath = (targetPlatform: string, targetMode: ContentMode) => {
-        if (targetPlatform === "youtube") {
-            return targetMode === "video" ? "/youtube/video" : "/youtube/channel"
-        }
-        return `/${targetPlatform}`
+        const newSearchParams = new URLSearchParams()
+        newSearchParams.set("platform", targetPlatform)
+        newSearchParams.set("mode", targetMode)
+        return `/?${newSearchParams.toString()}`
     }
 
     const updateContentMode = (mode: ContentMode) => {
-        if (platform !== "youtube" && mode === "video") return
-        const nextMode = platform === "youtube" ? mode : "channel"
-        const basePath = buildBasePath(platform, nextMode)
-        let nextId: string | null = currentItemId
-        if (nextMode === "video" && nextId?.startsWith("UC")) {
-            nextId = null
+        if (platformToUse !== "youtube" && mode === "video") return
+        const newSearchParams = new URLSearchParams()
+        newSearchParams.set("platform", platformToUse)
+        newSearchParams.set("mode", mode)
+        if (currentItemIdToUse) {
+            newSearchParams.set("id", currentItemIdToUse)
         }
-        if (nextMode === "channel" && nextId && !nextId.startsWith("UC")) {
-            nextId = null
-        }
-        const nextPath = nextId ? `${basePath}/${nextId}` : basePath
-        router.replace(nextPath)
+        router.replace(`/?${newSearchParams.toString()}`)
     }
 
     const updatePlatform = (value: string) => {
         const nextPlatform = value || "youtube"
+        const nextMode = nextPlatform === "youtube" ? contentModeToUse : "channel" // force channel mode for non-youtube
         
-        const nextMode = nextPlatform === "youtube" ? contentMode : "channel"
-        const basePath = buildBasePath(nextPlatform, nextMode)
+        const newSearchParams = new URLSearchParams()
+        newSearchParams.set("platform", nextPlatform)
+        newSearchParams.set("mode", nextMode)
 
-        let nextId: string | null = currentItemId
-        if (nextPlatform !== "youtube") {
-            if (nextId?.startsWith("UC")) { // Clear YouTube channel ID when switching away
-                nextId = null
-            }
-            if (!nextId) { // Ensure there's always an ID for non-YouTube platforms
-                nextId = "search" // Use a default ID if none exists
-            }
+        // Only include ID if it's relevant for the new platform/mode
+        if (nextPlatform === platformToUse && currentItemIdToUse) { // If only platform is changing
+             if (nextPlatform === "youtube" && currentItemIdToUse.startsWith("UC")) {
+                newSearchParams.set("id", currentItemIdToUse)
+             } else if (nextPlatform !== "youtube" && !currentItemIdToUse.startsWith("UC")) {
+                 newSearchParams.set("id", currentItemIdToUse)
+             }
+        } else if (nextPlatform !== "youtube") { // If switching to a non-youtube platform, and no ID exists
+            newSearchParams.set("id", "search")
         }
 
-        const nextPath = nextId ? `${basePath}/${nextId}` : basePath
-        router.push(nextPath)
+
+        router.push(`/?${newSearchParams.toString()}`)
     }
 
     const getResultId = (result: any) => result?.[2] ?? ""
@@ -564,7 +585,7 @@ function DockyCount() {
         return result?.[3] ?? ""
     }
     const isFavoriteItem = (id: string) =>
-        favorites.some((fav) => fav.id === id && (fav.type ?? "channel") === contentMode && (fav.platform ?? "youtube") === platform)
+        favorites.some((fav) => fav.id === id && (fav.type ?? "channel") === contentModeToUse && (fav.platform ?? "youtube") === platformToUse)
 
     // --- useEffects (AFTER function definitions) ---
 
@@ -610,65 +631,60 @@ function DockyCount() {
         setSearchResults2([])
         setSearchQuery("")
         setSearchQuery2("")
-    }, [contentMode, platform])
+    }, [contentModeToUse, platformToUse])
 
-    // Intentionally no URL normalization here; path-based routing controls mode/platform.
-
+    // Fetching stats useEffect remains largely the same, but uses currentItemIdToUse
     useEffect(() => {
-        const idFromPath = pathId
-        const idFromSearch = searchParams.get("id")
-        const itemId = idFromPath || idFromSearch
-
-        if (!itemId || typeof itemId !== "string") return
+        if (!currentItemIdToUse || typeof currentItemIdToUse !== "string") return
 
         if (intervalRef.current) clearInterval(intervalRef.current)
 
         if (isTikTok) {
-            fetchTikTokStats(itemId, false)
+            fetchTikTokStats(currentItemIdToUse, false)
             intervalRef.current = setInterval(() => {
-                fetchTikTokStats(itemId, false)
+                fetchTikTokStats(currentItemIdToUse, false)
             }, 2000)
             return
         }
 
         if (isTwitter) {
-            fetchTwitterStats(itemId, false)
+            fetchTwitterStats(currentItemIdToUse, false)
             intervalRef.current = setInterval(() => {
-                fetchTwitterStats(itemId, false)
+                fetchTwitterStats(currentItemIdToUse, false)
             }, 2000)
             return
         }
 
         if (isInstagram) {
-            fetchInstagramStats(itemId, false)
+            fetchInstagramStats(currentItemIdToUse, false)
             intervalRef.current = setInterval(() => {
-                fetchInstagramStats(itemId, false)
+                fetchInstagramStats(currentItemIdToUse, false)
             }, 2000)
             return
         }
 
         if (isVideoMode) {
-            if (itemId.startsWith("UC")) {
+            if (currentItemIdToUse.startsWith("UC")) {
                 setSelectedVideo(null)
                 return
             }
-            fetchVideoStats(itemId, false)
+            fetchVideoStats(currentItemIdToUse, false)
             intervalRef.current = setInterval(() => {
-                fetchVideoStats(itemId, false)
+                fetchVideoStats(currentItemIdToUse, false)
             }, 2000)
             return
         }
 
-        if (!itemId.startsWith("UC")) {
+        if (!currentItemIdToUse.startsWith("UC")) {
             setSelectedChannel(null)
             return
         }
 
-        fetchChannelStats(itemId, false)
+        fetchChannelStats(currentItemIdToUse, false)
         intervalRef.current = setInterval(() => {
-            fetchChannelStats(itemId, false)
+            fetchChannelStats(currentItemIdToUse, false)
         }, 2000)
-    }, [params.id, searchParams, isVideoMode, platform])
+    }, [searchParams, isVideoMode, platformToUse, currentItemIdToUse]) // Depend on searchParams and explicit state
 
     useEffect(() => {
         if (typeof window !== "undefined" && !odometerLoadedRef.current) {
@@ -815,7 +831,7 @@ function DockyCount() {
         const compareId = searchParams.get("compare")
         if (!compareId) return
         if (isVideoMode && compareId.startsWith("UC")) return
-        if (!isVideoMode && platform === "youtube" && !compareId.startsWith("UC")) return
+        if (!isVideoMode && platformToUse === "youtube" && !compareId.startsWith("UC")) return
         if (!compareMode) {
             setCompareMode(true)
         }
@@ -846,7 +862,7 @@ function DockyCount() {
                 fetchChannelStats(compareId, true)
             }, 2000)
         }
-    }, [searchParams, compareMode, isVideoMode, platform])
+    }, [searchParams, compareMode, isVideoMode, platformToUse])
 
     useEffect(() => {
         if (!compareMode && compareIntervalRef.current) {
@@ -876,7 +892,7 @@ function DockyCount() {
     }, [searchQuery2])
 
     const visibleFavorites = favorites.filter((fav) =>
-        (fav.type ?? "channel") === contentMode && (fav.platform ?? "youtube") === platform
+        (fav.type ?? "channel") === contentModeToUse && (fav.platform ?? "youtube") === platformToUse
     )
 
     const selectedDisplay = isVideoMode
@@ -1115,7 +1131,7 @@ function DockyCount() {
                             <div className="flex flex-wrap gap-3 mb-6">
                                 <div className="flex items-center gap-3 px-3 py-2 bg-secondary/50 rounded-2xl border border-border/50 w-fit">
                                     <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Platform</span>
-                                    <Select value={platform} onValueChange={updatePlatform}>
+                                    <Select value={platformToUse} onValueChange={updatePlatform}>
                                         <SelectTrigger className="h-9 rounded-xl border-border/60 bg-background/70 text-xs font-bold uppercase tracking-wide shadow-none">
                                             <SelectValue placeholder="Select platform" />
                                         </SelectTrigger>
@@ -1149,7 +1165,7 @@ function DockyCount() {
                                 </div>
                                 <div className="flex items-center gap-3 px-3 py-2 bg-secondary/50 rounded-2xl border border-border/50 w-fit">
                                     <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Mode</span>
-                                    <Select value={contentMode} onValueChange={(value) => updateContentMode(value as ContentMode)}>
+                                    <Select value={contentModeToUse} onValueChange={(value) => updateContentMode(value as ContentMode)}>
                                         <SelectTrigger className="h-9 rounded-xl border-border/60 bg-background/70 text-xs font-bold uppercase tracking-wide shadow-none">
                                             <span className="flex items-center gap-2">
                                                 {isVideoMode ? <Play className="w-3.5 h-3.5" /> : <Globe className="w-3.5 h-3.5" />}
@@ -1163,7 +1179,7 @@ function DockyCount() {
                                             >
                                                 Channels
                                             </SelectItem>
-                                            {platform === "youtube" && (
+                                            {platformToUse === "youtube" && (
                                                 <SelectItem
                                                     value="video"
                                                     className="rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-wide data-[highlighted]:bg-secondary/70 data-[highlighted]:text-foreground data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary"
@@ -1390,7 +1406,7 @@ function DockyCount() {
                                         <div className="flex flex-col md:flex-row items-center justify-around gap-8">
                                             <div className="text-center">
                                                 <div className="text-[10px] font-bold uppercase text-muted-foreground mb-2">{gapLabel}</div>
-                                                <div className="text-5xl md:text-6xl font-black tracking-tighter tabular-nums flex items-center justify-center gap-3 whitespace-nowrap">
+                                                <div className="text-5xl md:text-6xl font-black tabular-nums tracking-tighter leading-none whitespace-nowrap">
                                                     {primaryGap > 0 ? <TrendingUp className="w-8 h-8 text-green-500" /> : <TrendingDown className="w-8 h-8 text-red-500" />}
                                                     <div id="gap-difference"></div>
                                                 </div>
@@ -1411,7 +1427,7 @@ function DockyCount() {
                                 </div>
                                 <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-4">Start Monitoring</h2>
                                 <p className="text-muted-foreground max-w-md mx-auto mb-8 text-lg">
-                                    Search for any {platform === "youtube" ? "YouTube " : ""}{emptyStateLabel} above to see real-time statistics, future projections, and detailed comparisons.
+                                    Search for any {platformToUse === "youtube" ? "YouTube " : ""}{emptyStateLabel} above to see real-time statistics, future projections, and detailed comparisons.
                                 </p>
                                 <div className="flex gap-2">
                                     <div className="h-2 w-2 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]" />
