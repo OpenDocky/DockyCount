@@ -28,6 +28,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+        <script defer src="https://cloud.umami.is/script.js" data-website-id="44175c92-c5d8-40ca-a25b-b8fb15aa7ab3" />
       </head>
       <body className="font-sans antialiased min-h-screen flex flex-col" suppressHydrationWarning>
         <main className="flex-1 relative">
